@@ -1,0 +1,243 @@
+{
+  "version": "0.4.13",
+  "tested_client": "1788652215",
+  "methods": [
+    {
+      "start": "UpdateApps(e,t){",
+      "end": "UpdateFriendOwnedGames(e)",
+      "original_sha256": "5c4f8754691744a2dadcb2cf72a9240f5238cc458de5e13d74788c8964be34d8",
+      "patched_sha256": "b5d54896c979886de458725e70bb61a5b581370cbad35fdd8ff33c2abfe2136a",
+      "replacement": "UpdateApps(e,t){const r=new Set(this.m_setApps);let s;if(this.m_filter&&!this.m_filter.bIsEmpty){const a={m_filterSpec:this.m_filter.ToStorageFormat()};for(let t of (s??=e.filter(e=>e.visible_in_game_list)))this.m_filter.MatchesImpl.call(a,t)?r.add(t.appid):r.delete(t.appid);for(let e of t)r.delete(e);}else r.clear();this.m_setAddedManually.forEach(e=>r.add(e));this.m_setRemovedManually.forEach(e=>r.delete(e));let i=!1;if(this.m_setApps.size>0)for(let t of (s??=e.filter(e=>e.visible_in_game_list)))if(r.has(t.appid)){i=!0;break}(r.size!==this.m_setApps.size||[...r].some(e=>!this.m_setApps.has(e)))&&(v.Debug(this.id),this.m_setApps=r,this.ClearAppCounts());i&&this.ClearAppCounts();}"
+    },
+    {
+      "start": "UpdateAppOverview(e){",
+      "end": "GetAppOverviewByAppID(e){",
+      "original_sha256": "e3138c84c4111b67b1111fe7ed7746e98518484762d4b7d0759ab276c97c50aa",
+      "patched_sha256": "2c76f9238f0a0cd01aa948d008d49cf6d18f685124a0cd560b63f38d9d87faa4",
+      "replacement": "UpdateAppOverview(e){const t=A.bs.deserializeBinary(e),r=t.full_update();let i=t.app_overview(),n=t.removed_appid();const a=[];d.Vw.OnAppOverviewChange(i);let l=!1;N.Debug((r?\"Full\":\"Partial\")+\" update of\",i.length,t.update_complete()?\"complete\":\"in progress\",e.byteLength,\"bytes\"),r||N.Debug(\"Apps changed\",i.map(e=>e.appid()),n);for(let e of i){let t=this.m_mapApps.get(e.appid());const i=t?.local_per_client_data?.display_status;let n=t?.BHasNonObservableChange(e),s=t?.BHasObservableChange(e);if(t&&!n&&!s&&(!r||this.m_bIsInitialized))continue;const c=t?.GetPreservedState(),d=n||!t||!t.BHasObservables();d&&(!r&&N.Debug(`Replacing IAppOverview for ${e.appid()}`),this.m_bIsInitialized&&!r&&s?(N.Debug(`Making ${e.appid()} observable`),t=new P):t=new E),t.InitFromProto(e),c&&t.RestorePreservedState(c),d&&this.m_mapApps.set(t.appid,t),a.push(t);let u=t.local_per_client_data?.display_status;u!=i&&(u!=A.Ul.Fi&&u!=A.Ul.Vv&&u!=A.Ul.iO&&i!=A.Ul.Fi&&i!=A.Ul.Vv&&i!=A.Ul.iO||(l=!0))}for(let e of n)this.m_mapApps.delete(e);return l&&s.oy.ScopeRunningApps(),w.md.OnAppOverviewChange(a,n),t.update_complete()}"
+    },
+    {
+      "start": "async InitAfterLogin(){",
+      "end": "GetServicesInitialized(){",
+      "original_sha256": "ec178e86f9fdf2fcaeaba2eb85e76e31f3b972caa5dc0a459c8b6e530178814e",
+      "patched_sha256": "ff11d478309126fc458f562d71654b96850a0c69ad736a6bb3faad40e0359c50",
+      "replacement": "async InitAfterLogin(){if(this.m_bStartedInitAfterLogin)return;console.time(\"SteamApp Init - After Login total time\"),this.m_bStartedInitAfterLogin=!0;let e=this.m_cm;try{await Promise.all([ur.md.Register(),_r.X$.Register()]);const t=()=>{const e=[];try{(0,y.rf)()&&e.push(\"on_steamos\"),y.TS.PLATFORM&&e.push(y.TS.PLATFORM),d.oy.IsGamepadUIWindowActive()&&e.push(\"gamepadui\"),d.oy.IsDesktopUIWindowActive()&&e.push(\"desktopui\"),R.qL.IsSteamVRRunning&&e.push(\"VR\"),$.Z4.IsCEFDebuggingEnabled()&&e.push(\"cef_debugging\")}catch{}return e},r=(0,tt.aj)();r.Init(\"Shared SteamUI\",CLSTAMP,e.GetServiceTransport(),{fnGetReportingInterval:ti,fnGetReportTags:t}),$t.y.Init(\"Shared SteamUI\",CLSTAMP,e.GetServiceTransport());const i=(e,t,i)=>{if(e instanceof Error)r.ReportError(e);else{let n=e.toString();if(\"[object Object]\"==e)try{n=JSON.stringify(e)}catch{n=\"[Stringify Error]\"}r.ReportError(new Error(`Startup error in ${t} - ${i}: ${n}`),{bIncludeMessageInIdentifier:!0})}};await(0,tr.b)(\"SteamApp Init - After Login - Key dependencies\",[[\"CloudStorage\",()=>l.s7.Init(e)],[\"AchievementProgress\",()=>sr.y.Init(e)],[\"URLStore\",()=>m.B7.Init()],[\"GameActionStore\",()=>v.I.Init()],[\"SettingsStore\",()=>M.rV.Init(e)],[\"SystemInfoStore\",()=>$.Z4.Init()],[\"FriendsChatStore - Startup\",()=>q.LN.InitUser()],[\"GuidedTourStore\",()=>zr.sp.Init()]],!0,i),this.m_mapCloudStorage.set(l.Jq.Po,await l.s7.ForNamespace(l.Jq.Po)),await(0,tr.b)(\"SteamApp Init - After Login - AppStore\",[[\"AppStore\",()=>g.tw.Init(e,this.GetCloudStorage(l.Jq.Po))]],!0,i),await(0,tr.b)(\"SteamApp Init - After Login - FriendStore\",[[\"FriendStore (steamui)\",()=>Cr.O$.Init(e,(0,a.bg)())]],!0,i),this.m_mapCloudStorage.set(l.Jq.Wt,await l.s7.ForNamespace(l.Jq.Wt)),await(0,tr.b)(\"SteamApp Init - After Login - CollectionStore\",[[\"CollectionStore\",()=>ur.md.Init(this.GetCloudStorageForLibrary())]],!0,i),await(0,tr.b)(\"SteamApp Init - After Login - Remaining services\",[[\"AppInfoStore\",()=>Xe.Vw.Init(e)],[\"AppActivityStore\",()=>ar.yX.Init(e)],[\"AppDetailsStore\",()=>or.H.Init(e)],[\"AppReviewStore\",()=>lr.x.Init(e)],[\"AppSpotlightsStore\",()=>cr.Ri.Init(e)],[\"LibraryUIStore\",()=>A.n6.Init(e)],[\"WorkshopStore\",()=>jr.B6.Init(e)],[\"CommunityStore\",()=>mr.Nb.Init(e)],[\"LibraryEventStore\",()=>br.dm.Init(e)],[\"BadgeStore\",()=>dr.x_.Init(e)],[\"ShowcaseStore\",()=>Rr.N.Init(this.GetCloudStorageForLibrary())],[\"SettingsZooStore\",()=>xr.hG.Init()],[\"PlayNextStore\",()=>Sr.x3.Init(e)],[\"DownloadsStore\",()=>Ar.hj.Init()],[\"FAQStore\",()=>Kt.Init(e)],[\"ControllerConfigStore\",()=>_.v3.Init()],[\"ControllerConfigInterstitialStore\",()=>H.z.Init()],[\"InstallFolderStore\",()=>fr.fN.Init()],[\"SubscriberAgreementStore\",()=>Je.Yq.Init(e)],[\"ScreenshotStore\",()=>Mr.y.Init(e)],[\"TrendingStore\",()=>Tr.J.Init(e)],[\"DiscoveryQueueStore\",()=>$e.aI.Init(e.GetServiceTransport())],[\"DynamicUserStore\",()=>Promise.race([et.Fm.Get().HintLoad(),new Promise(e=>setTimeout(e,8e3))])],[\"UserProfileStore\",()=>ae.iG.Init(e)],[\"SearchStore\",()=>Ir.U.Init(e)],[\"MarketingStore\",()=>Jt.Nt.Init(e)],[\"AchievementStore\",()=>nr.p6.Init()],[\"BasicUIStore - with user\",()=>d.oy.InitWithUser()],[\"KeyboardSettingsStore\",()=>Z.O.Init()],[\"RemotePlayStore\",()=>vr.ut.Init(e)],[\"OverlayStore\",()=>wr.Qx.Init(e)],[\"GameReleasedStore\",()=>_r.X$.Init(this.GetCloudStorageForLibrary())],[\"ServerBrowserStore\",()=>b.Xw.Init(e)],[\"MusicStore\",()=>Br.l.Init()],[\"GRS\",()=>(0,o.Z9)(e.GetServiceTransport(),le.XP,le.Nd)],[\"EmojiStore\",()=>gr._.Init()],[\"SteamNotificationsStore\",()=>ie.$Z.Initialize(e)],[\"GamescopeStore\",()=>Q.YS.Init()],[\"SystemStorageStore\",()=>te._r.Init()],[\"SDCardStore\",()=>te.bh.Init()],[\"SteamOSStore\",()=>Y.qF.Init()],[\"LEDManagerStore\",()=>Or.Gv.Init()],[\"HardwareUpdaterStore\",()=>Fr.xr.Init()],[\"BluetoothStore\",()=>J.Y4.Init()],[\"SystemAudioStore\",()=>Pr.F5.Init()],[\"EAAccessPromptManager\",()=>ce.Cf.Init(this.GetCloudStorageForLibrary())]],!0,i),this.m_bServicesInitialized=!0,SteamClient.UI.NotifyAppInitialized()}catch(e){console.error(\"FAILED TO INITIALIZE THE STORES\",e)}console.timeEnd(\"SteamApp Init - After Login total time\")}"
+    }
+  ],
+  "contracts": [
+    {
+      "start": "MatchesImpl(e){",
+      "end": "Matches(e){",
+      "sha256": "e39e8d466bb3cd7a01dbbd5ff7052ffd129bb86740a08182af4da6c54a7f3b4c"
+    },
+    {
+      "literal": "ToStorageFormat(){return(0,o.HO)(this.m_filterSpec)}"
+    }
+  ],
+  "alternates": [
+    {
+      "tested_client": "1791918634",
+      "target": "sp.js",
+      "bundle_format": "sp",
+      "loader_marker": "3714:\"sp\"",
+      "css_sha256": "7e15a39f83bf145b759131381f7f6191503a9490de939024059c30412a3b6123",
+      "methods": [
+        {
+          "start": "UpdateAppOverview(",
+          "end": "GetAppOverviewByAppID(V){",
+          "original_sha256": "914376cb3de2417bdc4ed827b854efe5485f904483ab0236d645dd80153d0858",
+          "patched_sha256": "f0f4d80d45dc9b583085034ae713972c981da33a219befe62130b68b9a7c0195",
+          "replacement": "UpdateAppOverview(v){const b=h.bs.deserializeBinary(v),d=b.full_update();let c=b.app_overview(),f=b.removed_appid();const r=[];o.Vw.OnAppOverviewChange(c);let l=!1;M.Debug(`${d?\"Full\":\"Partial\"} update of`,c.length,b.update_complete()?\"complete\":\"in progress\",v.byteLength,\"bytes\"),d||M.Debug(\"Apps changed\",c.map(p=>p.appid()),f);for(let p of c){let k=this.m_mapApps.get(p.appid());const s=k?.local_per_client_data?.display_status;let n=k?.BHasNonObservableChange(p),t=k?.BHasObservableChange(p);if(k&&!n&&!t&&(!d||this.m_bIsInitialized))continue;const i=k?.GetPreservedState(),u=n||!k||!k.BHasObservables();u&&(!d&&M.Debug(`Replacing IAppOverview for ${p.appid()}`),this.m_bIsInitialized&&!d&&t?(M.Debug(`Making ${p.appid()} observable`),k=new G):k=new J),k.InitFromProto(p),i&&k.RestorePreservedState(i),u&&this.m_mapApps.set(k.appid,k),r.push(k);let z=k.local_per_client_data?.display_status;z!=s&&(z==h.Ul.Fi||z==h.Ul.Vv||z==h.Ul.iO||s==h.Ul.Fi||s==h.Ul.Vv||s==h.Ul.iO)&&(l=!0)}for(let p of f)this.m_mapApps.delete(p);return l&&a.oy.ScopeRunningApps(),x.md.OnAppOverviewChange(r,f),b.update_complete()}"
+        },
+        {
+          "start": "async InitAfterLogin(){",
+          "end": "GetServicesInitialized(){",
+          "original_sha256": "c07f202aa994b02491aa500ce7e65003d23c90a9015d8750f6095036b9e84ec5",
+          "patched_sha256": "98127e15b2a221577e0bdfad49cecd1eac45657ab57488ad488b538c40284fc1",
+          "replacement": "async InitAfterLogin(){if(this.m_bStartedInitAfterLogin)return;console.time(\"SteamApp Init - After Login total time\"),this.m_bStartedInitAfterLogin=!0;let qe=this.m_cm;try{await Promise.all([aa.md.Register(),fn.X$.Register()]);const _t=()=>{const ui=[];try{(0,I.rf)()&&ui.push(\"on_steamos\"),I.TS.PLATFORM&&ui.push(I.TS.PLATFORM),o.oy.IsGamepadUIWindowActive()&&ui.push(\"gamepadui\"),o.oy.IsDesktopUIWindowActive()&&ui.push(\"desktopui\"),S.qL.IsSteamVRRunning&&ui.push(\"VR\"),ot.Z4.IsCEFDebuggingEnabled()&&ui.push(\"cef_debugging\")}catch{}return ui},Dr=new URLSearchParams(window.location.search).get(\"PACKAGE_CL\"),br=Ln,Or=(0,ur.aj)();Or.Init(\"Shared SteamUI\",br,qe.GetServiceTransport(),{fnGetReportingInterval:Oa,fnGetReportTags:_t,strDisplayVersion:Dr}),bt.y.Init(\"Shared SteamUI\",br,qe.GetServiceTransport());const Hr=(ui,Ci,Wi)=>{if(ui instanceof Error)Or.ReportError(ui);else{let on=ui.toString();if(ui==\"[object Object]\")try{on=JSON.stringify(ui)}catch{on=\"[Stringify Error]\"}Or.ReportError(new Error(`Startup error in ${Ci} - ${Wi}: ${on}`),{bIncludeMessageInIdentifier:!0})}};await(0,Xn.b)(\"SteamApp Init - After Login - Key dependencies\",[[\"CloudStorage\",()=>r.s7.Init(qe)],[\"AchievementProgress\",()=>Bs.y.Init(qe)],[\"URLStore\",()=>l.B7.Init()],[\"GameActionStore\",()=>C.I.Init()],[\"SettingsStore\",()=>P.rV.Init(qe)],[\"SystemInfoStore\",()=>ot.Z4.Init()],[\"FriendsChatStore - Startup\",()=>zt.LN.InitUser()],[\"GuidedTourStore\",()=>yn.sp.Init()]],!0,Hr),this.m_mapCloudStorage.set(r.Jq.Po,await r.s7.ForNamespace(r.Jq.Po)),await(0,Xn.b)(\"SteamApp Init - After Login - AppStore\",[[\"AppStore\",()=>c.tw.Init(qe,this.GetCloudStorage(r.Jq.Po))]],!0,Hr),await(0,Xn.b)(\"SteamApp Init - After Login - FriendStore\",[[\"FriendStore (steamui)\",()=>_i.O$.Init(qe,(0,i.bg)())]],!0,Hr),this.m_mapCloudStorage.set(r.Jq.Wt,await r.s7.ForNamespace(r.Jq.Wt)),await(0,Xn.b)(\"SteamApp Init - After Login - CollectionStore\",[[\"CollectionStore\",()=>aa.md.Init(this.GetCloudStorageForLibrary())]],!0,Hr),this.m_mapCloudStorage.set(r.Jq.$U,await r.s7.ForNamespace(r.Jq.$U)),await(0,Xn.b)(\"SteamApp Init - After Login - Remaining services\",[[\"AppInfoStore\",()=>ei.Vw.Init(qe)],[\"AppActivityStore\",()=>Us.yX.Init(qe)],[\"AppDetailsStore\",()=>js.H.Init(qe)],[\"AppReviewStore\",()=>Ia.x.Init(qe)],[\"AppSpotlightsStore\",()=>ia.Ri.Init(qe)],[\"LibraryUIStore\",()=>h.n6.Init(qe)],[\"WorkshopStore\",()=>vn.B6.Init(qe)],[\"CommunityStore\",()=>Ys.Nb.Init(qe)],[\"LibraryEventStore\",()=>ne.dm.Init(qe)],[\"BadgeStore\",()=>Ba.x_.Init(qe)],[\"ShowcaseStore\",()=>Yi.N.Init(this.GetCloudStorageForLibrary())],[\"SettingsZooStore\",()=>Hi.hG.Init()],[\"PlayNextStore\",()=>sa.x3.Init(qe)],[\"DownloadsStore\",()=>Ha.hj.Init()],[\"FAQStore\",()=>Xi.Init(qe)],[\"ControllerConfigStore\",()=>w.v3.Init()],[\"ControllerConfigInterstitialStore\",()=>Ft.z.Init()],[\"InstallFolderStore\",()=>oi.fN.Init()],[\"SubscriberAgreementStore\",()=>vr.Yq.Init(qe)],[\"ScreenshotStore\",()=>Gr.y.Init(qe)],[\"TrendingStore\",()=>Mn.J.Init(qe)],[\"DiscoveryQueueStore\",()=>mr.aI.Init(qe.GetServiceTransport())],[\"DynamicUserStore\",()=>{const p=Jt.Fm.Get().HintLoad();let t;return Promise.race([p,new Promise(r=>{t=setTimeout(r,8e3)})]).finally(()=>clearTimeout(t))}],[\"UserProfileStore\",()=>We.iG.Init(qe)],[\"SearchStore\",()=>li.U.Init(qe)],[\"MarketingStore\",()=>un.Nt.Init(qe)],[\"AchievementStore\",()=>Os.p6.Init()],[\"BasicUIStore - with user\",()=>o.oy.InitWithUser()],[\"KeyboardSettingsStore\",()=>Tt.O.Init()],[\"RemotePlayStore\",()=>yi.ut.Init(qe)],[\"OverlayStore\",()=>la.Qx.Init(qe)],[\"GameReleasedStore\",()=>fn.X$.Init(this.GetCloudStorageForLibrary())],[\"ServerBrowserStore\",()=>y.Xw.Init(qe)],[\"MusicStore\",()=>xi.l.Init()],[\"GRS\",()=>(0,s.Z9)(qe.GetServiceTransport(),Te.XP,Te.Nd)],[\"EmojiStore\",()=>An._.Init()],[\"SteamNotificationsStore\",()=>W.$Z.Initialize(qe)],[\"GamescopeStore\",()=>St.YS.Init()],[\"SystemStorageStore\",()=>Ze._r.Init()],[\"SDCardStore\",()=>Ze.bh.Init()],[\"SteamOSStore\",()=>Ct.qF.Init()],[\"LEDManagerStore\",()=>er.Gv.Init()],[\"HardwareUpdaterStore\",()=>is.xr.Init()],[\"CompatManagerStore\",()=>Jn.jI.Init()],[\"BluetoothStore\",()=>it.Y4.Init()],[\"SystemAudioStore\",()=>Fi.F5.Init()],[\"HardwarePromoStore\",()=>Dn.Zs.Init(qe)],[\"EAAccessPromptManager\",()=>Je.Cf.Init(this.GetCloudStorageForLibrary())],[\"VRStore\",()=>(0,qi.gg)(this.GetCloudStorage(r.Jq.$U))]],!0,Hr),this.m_bServicesInitialized=!0,SteamClient.UI.NotifyAppInitialized()}catch(_t){console.error(\"FAILED TO INITIALIZE THE STORES\",_t)}console.timeEnd(\"SteamApp Init - After Login total time\")}"
+        },
+        {
+          "start": "function Wm(",
+          "end": "function w2(jt){",
+          "original_sha256": "d9cf8d5429423a9b407c3b34fa03c378adf8f69c28b6c19c9dfc235ca3addc68",
+          "patched_sha256": "732d9004757b81c9eef44a27101222ac8d7e3c95c98ceaee299c2ea7a22c093b",
+          "replacement": "function Wm(j,q){const u=[Sc.Pv,Sc.$e,Sc.H4],x=(0,l.q3)(()=>j.visibleApps.filter(p=>u.indexOf(p.canonicalAppType)!=-1)),v=(0,l.q3)(()=>{if(q)return[...x];const f=Ha.qL.IsSteamVRRunningAndHMDAwake?Ed.n6.collectionsAppFilterVR:Ed.n6.collectionsAppFilterGamepad;return x.filter(f.MatchesImpl.bind({m_filterSpec:f.ToStorageFormat()}))});return{filteredApps:v,unshownAppCount:x.length-v.length,total:x.length}}"
+        },
+        {
+          "start": "function Re(",
+          "end": "const mt=(0,p.PA)(function(ut){",
+          "original_sha256": "04034ba36c8702950018193c27ee73db8419df857ba772fa271009e4ae96cb9c",
+          "patched_sha256": "f551280aebb437db1ce6dc100ba1cdf3661a60062855bfdd06c018c1ae2e3473",
+          "replacement": "function Re(t){const{collection:n}=t,o=(0,w.q3)(()=>{const t=n.llfN;if(void 0!==t)return t;const e=l.n6.collectionsAppFilter;return n.visibleApps.filter(e.MatchesImpl.bind({m_filterSpec:e.ToStorageFormat()})).length}),i=(0,w.q3)(()=>n.GetAppCountWithToolsFilter(l.n6.collectionsAppFilter));let r,c;return o==i?r=\"( \"+i+\" )\":(r=\"( \"+o+\"/\"+i+\" )\",c=(0,e.jsx)(Z.J,{nTotalCount:i,nFilteredCount:o,filter:l.n6.currentAppFilter})),(0,e.jsx)(z.m9,{toolTipContent:c,children:(0,e.jsx)(\"div\",{className:Q().CollectionLabelCount,children:r})})}"
+        },
+        {
+          "start": "MatchesImpl(",
+          "end": "Matches(we){",
+          "original_sha256": "beeb4654ebccac17581cd008bfe23917026e45e14292b5d1572b173b80e5c466",
+          "patched_sha256": "15f4b19f261d639b00eafecf1fb28993b1a7d0f1ee05dc47d86e57191a0ab786",
+          "replacement": "MatchesImpl(we){const f=this.m_filterSpec,Ae=f.filterGroups,z=we==null,q=(a,b)=>(!z||a!==L.Kr)&&!Ae[a].rgOptions.length||$(Ae[a],b(we));if(!q(L.W6,Se)||!q(L.sc,Pe)||!q(L.Kr,Ve)||!q(L.bp,mt)||!q(L.Tx,_e)||!q(L.vA,xe)||!q(L.RB,Ue))return!1;if(f.strSearchText){if(i.n6.searchSuggestionIds.has(we.appid)||f.setSuggestions.has(we.appid)||i.n6.clientSearchSuggestionIds.has(we.appid)||String(we.appid)==f.strSearchText)return!0;let Ne=f.strSearchText.toLowerCase(),le=we.display_name.toLowerCase();return!!(le.includes(Ne)||we.sort_as.includes(Ne)||g(le,Ne)!==-1)}return!0}"
+        },
+        {
+          "start": "MatchesScoredImpl(",
+          "end": "MatchesScored(we){",
+          "original_sha256": "83894a090d73aab0dd35f1f3a9b166a780c0a10411e9c42f9f6e58bfbf130049",
+          "patched_sha256": "873bbb8debd36c135e3c0c7857f9f684fc8fe71b3076962b428920d6299485a7",
+          "replacement": "MatchesScoredImpl(we){const f=this.m_filterSpec,Ae=f.filterGroups,z=we==null,q=(a,b)=>(!z||a!==L.Kr)&&!Ae[a].rgOptions.length||$(Ae[a],b(we));if(!q(L.W6,Se)||!q(L.sc,Pe)||!q(L.Kr,Ve)||!q(L.bp,mt)||!q(L.Tx,_e)||!q(L.vA,xe)||!q(L.RB,Ue)||we.BIsAppBlocked())return 0;if(f.strSearchText){if(String(we.appid)==f.strSearchText)return 1;let Ne=f.strSearchText.toLowerCase(),le=we.display_name.toLowerCase(),Ee=le==we.sort_as?Ge(Ne,[le]):Ge(Ne,[le,we.sort_as]);return(i.n6.searchSuggestionIds.has(we.appid)||f.setSuggestions.has(we.appid))&&(Ee+=.2),i.n6.clientSearchSuggestionIds.has(we.appid)&&(Ee+=.2),Ee>0?Ee:g(le,Ne)!==-1?1:0}return 1}"
+        },
+        {
+          "start": "get allApps(){",
+          "end": "get storeTagCounts(){",
+          "original_sha256": "15c64af59f85b98581d67dbf131232e21490245d820d07f892cb553cb54a935d",
+          "patched_sha256": "df345d7db1b20040a2255fdda96a4af3ff96bbdcd9f543ffd54888ed58caaa43",
+          "replacement": "get allApps(){let c;return Array.from(this.m_mapApps.values()).filter(V=>V&&V.visible_in_game_list).sort((V,ee)=>(c??=this.m_collator.compare)(V.sort_as,ee.sort_as))}"
+        },
+        {
+          "start": "25523:",
+          "end": "24053:",
+          "original_sha256": "ef9195985973893c1501167ffde3432476810d3ad94b106429cf2d503dd60474",
+          "patched_sha256": "efe8189b17b5624b09d5d0cfbba32fb17dc938346ec8e5902b96acfed0935915",
+          "replacement": "25523:(e,t,i)=>{\"use strict\";i.d(t,{i:()=>f});var s=i(62540),r=i(63696),o=i(8658),n=i(71262),l=i(25348),d=i.n(l),h=i(3493),a=i(38850),c=i(74562),p=i(23365),m=Object.defineProperty,g=Object.getOwnPropertyDescriptor,u=(e,t,i,s)=>{for(var r,o=s>1?void 0:s?g(t,i):t,n=e.length-1;n>=0;n--)(r=e[n])&&(o=(s?r(t,i,o):r(o))||o);return s&&o&&m(t,i,o),o};function f(e){const[t,i]=r.useState(-1),o=r.useRef(void 0),{paddingLeft:l,paddingRight:d,childWidth:h,scaleGridItems:a,gridColumnGap:c,childElements:p,refItemsPerRow:m}=e,g=p.length,u=h*a+c,f=r.useCallback(()=>{const e=o.current.getBoundingClientRect().width-l-d,t=Math.max(1,Math.min(g,Math.floor((e+c)/u)));m&&(m.current=t),i(t)},[u,c,g,l,d,o,m]),R=(0,n.wY)(f);r.useEffect(f,[f]);const _=(0,n.Ue)(o,R);return(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)(\"div\",{className:\"CSSGrid_Measure\",ref:_}),-1!=t&&(0,s.jsx)(C,{...e,iItemsPerRow:t})]})}class C extends r.Component{m_elGrid=r.createRef();m_fLastScrollTop=void 0;m_nItemsDisplayed=0;m_intersectionObserver=void 0;m_bWasIntersecting=void 0;constructor(e){super(e),this.state={iFirstRenderableChild:0,iLastRenderableChild:0}}componentDidMount(){this.StartListening(),this.ComputeLayout();const e=this.m_elGrid.current.ownerDocument;if(!e.__llfTheme){const t=[],i=[];for(const s of e.styleSheets){let e;try{e=s.cssRules}catch{continue}for(const s of e){const e=s.selectorText;if(!e)continue;const r=e.replace(/:root:has\\(\\._2KPA3I9eXE9r251_-GX_iv\\s*>\\s*div\\[data-(?:accent|dull|body-text)-color=[^\\]]+\\]\\)/g,e=>{const i=\"llfTheme\"+t.length;return t.push([i,e]),\":root.\"+i+\".\"+i+\":not(llfNever)\"});e!==r&&i.push([s,e,r])}}if(69===t.length)try{for(const[e,t,s]of i)e.selectorText=s;e.__llfTheme=()=>{for(const[i,s]of t)e.documentElement.classList.toggle(i,e.documentElement.matches(s))},e.__llfTheme()}catch{for(const[e,t]of i)try{e.selectorText=t}catch{}for(const[i]of t)e.documentElement.classList.remove(i);delete e.__llfTheme}}}componentWillUnmount(){this.StopListening(this.props.scrollElement)}componentDidUpdate(e){this.props.scrollElement!=e.scrollElement?(this.StopListening(e.scrollElement),this.StartListening(),this.ComputeLayout()):(this.props.maxRows!=e.maxRows||this.props.childElements.length!=e.childElements.length||this.props.childWidth!=e.childWidth||this.props.childHeight!=e.childHeight||this.props.gridColumnGap!=e.gridColumnGap||this.props.gridRowGap!=e.gridRowGap||this.props.scaleGridItems!=e.scaleGridItems||this.props.paddingLeft!=e.paddingLeft||this.props.paddingRight!=e.paddingRight||this.props.iItemsPerRow!=e.iItemsPerRow)&&this.ComputeLayout()}OnScroll(e){const{renderOutsideRows:t,childHeight:i,scaleGridItems:s}=this.props,r=this.m_elGrid.current.getBoundingClientRect();if(Math.abs(r.top-this.m_fLastScrollTop)>i*s/(t>0?1:8)||void 0===this.m_fLastScrollTop){this.m_fLastScrollTop=r.top;const e=this.m_elGrid.current.ownerDocument.defaultView,i=(t||0)*this.fScaledChildHeight,s=r.top-i<e.innerHeight&&r.bottom+i>0,{iFirstRenderableChild:o,iLastRenderableChild:n}=this.state;(s||n>o)&&this.ComputeLayout()}}OnRestoreScroll(){this.ComputeLayout()}OnIntersection(e,t){const i=e.length&&e[0];i&&(i.isIntersecting||i.isIntersecting!==this.m_bWasIntersecting)&&(this.m_bWasIntersecting=i.isIntersecting,this.ComputeLayout())}StartListening(){this.props.scrollElement&&(this.props.scrollElement.addEventListener(\"scroll\",this.OnScroll),this.props.scrollElement.addEventListener(\"restorescroll\",this.OnRestoreScroll),this.m_intersectionObserver=(0,n.md)(this.m_elGrid.current,this.OnIntersection,{root:null}))}StopListening(e){e&&(e.removeEventListener(\"scroll\",this.OnScroll),e.removeEventListener(\"restorescroll\",this.OnRestoreScroll)),this.m_intersectionObserver&&(this.m_intersectionObserver.disconnect(),this.m_intersectionObserver=void 0)}GetGridStyle(e,t){return{gridTemplateColumns:\"repeat(auto-fill, \"+e+\"px)\",gridAutoRows:t+\"px\",gridColumnGap:this.props.gridColumnGap,gridRowGap:this.props.gridRowGap,fontSize:t/11+\"px\",paddingLeft:this.props.paddingLeft,paddingRight:this.props.paddingRight}}get fScaledChildWidth(){return this.props.childWidth*this.props.scaleGridItems}get fScaledChildHeight(){return this.props.childHeight*this.props.scaleGridItems}get fScaledPaddedChildWidth(){return this.fScaledChildWidth+this.props.gridColumnGap}get fScaledPaddedChildHeight(){return this.fScaledChildHeight+this.props.gridRowGap}get itemsDisplayed(){return this.m_nItemsDisplayed}ComputeLayout(){const e=this.fScaledPaddedChildHeight,{iItemsPerRow:t}=this.props,i=this.m_elGrid.current.getBoundingClientRect(),s=this.m_elGrid.current.ownerDocument.defaultView,r=(this.props.renderOutsideRows||0)*e,o=0-r-i.top,n=s.innerHeight+r-i.top,l=Math.floor(o/e)*t,d=Math.ceil(n/e)*t,h=(0,p.OQ)(l,0,this.props.childElements.length),a=(0,p.OQ)(d,0,this.props.childElements.length);(h!=this.state.iFirstRenderableChild||a!=this.state.iLastRenderableChild)&&this.setState({iFirstRenderableChild:h,iLastRenderableChild:a});const c=void 0!==this.props.maxRows?Math.min(this.props.childElements.length,t*this.props.maxRows):this.props.childElements.length;c!=this.m_nItemsDisplayed&&(this.props.onItemsDisplayedCountChanged&&this.props.onItemsDisplayedCountChanged(c),this.m_nItemsDisplayed=c)}GetChildren(e,t,i,r){const o=this.props.childElements.slice(t,i),n=[];for(;o.length;)n.push((0,s.jsx)(\"div\",{style:{display:\"contents\"},role:\"row\",\"aria-rowindex\":e+1,children:o.slice(0,r)},\"_grid_row\"+e)),e++,o.splice(0,r);const l=t%r;for(let e=0;e<l;++e)n.unshift((0,s.jsx)(\"div\",{},\"_grid_pad_\"+e));return n}render(){const{childElements:e,childHeight:t,childWidth:i,gridColumnGap:r,gridRowGap:n,iItemsPerRow:l,renderOutsideRows:p,scaleGridItems:m,scrollElement:g,animateExpansion:u,gridClassName:f,maxRows:C,minRows:R,name:_,navRef:y,onItemsDisplayedCountChanged:w,paddingBottom:S,paddingLeft:G,paddingRight:I,refItemsPerRow:v,\"aria-label\":b,\"aria-labelledby\":L,\"aria-description\":x,\"aria-describedby\":E,...O}=this.props,P=this.fScaledChildWidth,M=this.fScaledChildHeight,T=this.fScaledPaddedChildHeight,{iFirstRenderableChild:D,iLastRenderableChild:H}=this.state,W=Math.floor(D/l),j=Math.floor(H/l),A=Math.ceil(e.length/l);let N=Math.max(R||0,A);void 0!==C&&(N=Math.min(N,C));const F={width:\"100%\",height:W*T},U={width:\"100%\",height:Math.max(0,N-j-1)*T},B=this.GetChildren(W,D,H,l);(0,h.wT)(B.length<=(j-W+1)*l,\"Too many children for row count\");let X=S??0;return 0==N&&(X=0),(0,s.jsxs)(a.Z,{\"flow-children\":\"grid\",ref:this.m_elGrid,navRef:y,navKey:_,navEntryPreferPosition:c.iU.MAINTAIN_X,className:(0,o.A)(d().Container,u&&d().Animate),style:{height:T*N+X+\"px\"},...O,children:[(0,s.jsx)(\"div\",{style:F},\"cssgrid_upfront_padding\"),(0,s.jsx)(a.Z,{role:\"grid\",\"aria-label\":b,\"aria-labelledby\":L,\"aria-description\":x,\"aria-describedby\":E,\"aria-rowcount\":N,className:(0,o.A)(d().CSSGrid,f),style:this.GetGridStyle(P,M),navEntryPreferPosition:c.iU.MAINTAIN_X,children:B}),(0,s.jsx)(\"div\",{style:U},\"cssgrid_end_padding\")]})}}u([n.oI,(0,n.xP)(\"on_scroll\",\"cssgrid\")],C.prototype,\"OnScroll\",1),u([n.oI],C.prototype,\"OnRestoreScroll\",1),u([n.oI],C.prototype,\"OnIntersection\",1),u([(0,n.xP)(\"get_children\",\"cssgrid\")],C.prototype,\"GetChildren\",1),u([(0,n.xP)(\"render\",\"cssgrid\")],C.prototype,\"render\",1)},"
+        },
+        {
+          "start": "3188:",
+          "end": "5416:",
+          "original_sha256": "24a8d1e6a458b31a3358be431acff41a3c11b4cfad507b66bc300d7a221cff04",
+          "patched_sha256": "f5f31f9985f57ea32479462194aed51918f7617897a4f11ac818d8330b301f9d",
+          "replacement": "3188:(e,o,t)=>{\"use strict\";t.d(o,{Y:()=>j});var r=t(62540),n=t(63696),l=t(17215),s=t(17353),c=t(65895);const i=(0,n.createContext)({sm:768,md:940,lg:1240,ff:\"lg\"});function a(e){const{children:o,breakpoints:t={}}=e,l=(0,n.useContext)(i),a={sm:t.sm??l.sm,md:t.md??l.md,lg:t.lg??l.lg},d=function(e){const o=(0,s.$)(`(min-width: ${e.sm}px)`),t=(0,s.$)(`(min-width: ${e.md}px)`),r=(0,s.$)(`(min-width: ${e.lg}px)`),[l,i]=(0,n.useState)(!0);(0,n.useEffect)(()=>i(!0),[]);const a=(0,c.d)();return l?r?\"lg\":t?\"md\":o?\"sm\":\"initial\":a.viewportWidth?a.viewportWidth.value>=e.lg?\"lg\":a.viewportWidth.value>=e.md?\"md\":a.viewportWidth.value>=e.sm?\"sm\":\"initial\":\"lg\"}(a),{sm:u,md:x,lg:f}=a,m=(0,n.useMemo)(()=>({ff:d,sm:u,md:x,lg:f}),[d,u,x,f]);return(0,r.jsx)(i.Provider,{value:m,children:o})}function d(e){const{formFactor:o,children:t}=e,l=(0,n.useContext)(i),s=(0,n.useMemo)(()=>({...l,ff:o??l.ff}),[l,o]);return o?(0,r.jsx)(i.Provider,{value:s,children:t}):(0,r.jsx)(r.Fragment,{children:t})}[\"initial\",\"sm\",\"md\",\"lg\"].reduce((e,o,t)=>(e[o]=t,e),{});const u=(0,n.createContext)({}),x=(0,n.createContext)(()=>{});function f(e){const[o,t]=(0,n.useState)({});return(0,r.jsx)(u.Provider,{value:o,children:(0,r.jsx)(x.Provider,{value:t,children:e.children})})}var m=t(4452),h=t.n(m);const g=[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\",\"11\",\"12\"],C=[\"title\",\"subtitle\",\"body\",\"description\",\"note\"],v=(0,n.createContext)({Button:\"basic\",Checkbox:\"basic\",Combobox:\"basic\",LoadingSpinner:\"basic\",SegmentedControl:\"basic\",Select:\"basic\",TextArea:\"basic\",TextInput:\"basic\"});function b(e){const{variants:o={},children:t}=e,l=(0,n.use)(v);return(0,r.jsx)(v,{value:{...l,...o},children:t})}function p(e){const o=n.useRef(null),{accentColor:t,dullColor:l,bodyTextColor:s,successColor:c,warningColor:i,errorColor:d,successTextColor:u,warningTextColor:x,errorTextColor:f,children:m,breakpoints:h,variants:g}=e,C={display:\"contents\"};let v,p,j;\"string\"==typeof t?v=t:t&&y(C,\"accent\",t),\"string\"==typeof l?p=l:l&&y(C,\"dull\",l),\"string\"==typeof s?j=s:s&&$(C,\"body\",s),c&&y(C,\"success\",c),i&&y(C,\"warning\",i),d&&y(C,\"error\",d),u&&$(C,\"success\",u),x&&$(C,\"warning\",x),f&&$(C,\"error\",f),n.useLayoutEffect(()=>{const e=o.current?.ownerDocument;if(e)return e.__llfTheme?.(),()=>queueMicrotask(()=>e.__llfTheme?.())},[v,p,j]);const w=(0,r.jsx)(b,{variants:g,children:(0,r.jsx)(\"div\",{\"data-accent-color\":v,\"data-dull-color\":p,\"data-body-text-color\":j,style:C,ref:o,children:(0,r.jsx)(\"div\",{style:{display:\"contents\",color:\"var(--color-text-body-body)\"},children:m})})});return h?(0,r.jsx)(a,{breakpoints:h,children:w}):w}function y(e,o,t){if(\"string\"==typeof t)for(const r of g)e[`--color-${o}-${r}`]=`var(--color-${t}-${r})`;else for(const[r,n]of Object.entries(t))e[`--color-${o}-${r}`]=n}function $(e,o,t){if(\"string\"==typeof t)for(const r of C)e[`--color-text-${o}-${r}`]=`var(--color-${t}-${r})`;else for(const[r,n]of Object.entries(t))e[`--color-text-${o}-${r}`]=n}const j=n.memo(function(e){const{defaultTextSize:o,accentColor:t=\"blue\",dullColor:n=\"greyneutral\",successColor:s=\"green\",warningColor:c=\"yellow\",errorColor:i=\"red\",bodyTextColor:d=\"text-light\",successTextColor:u=\"text-green\",warningTextColor:x=\"text-red\",errorTextColor:m=\"text-red\",breakpoints:g,variants:C,children:v,zoo:b}=e;let y;return o&&(y={\"--default-font-size\":`var(--text-size-${o})`,\"--default-line-height\":`var(--line-height-${o})`,\"--default-letter-spacing\":`var(--letter-spacing-${o})`}),(0,r.jsx)(f,{children:(0,r.jsx)(a,{breakpoints:g,children:(0,r.jsx)(w,{children:(0,r.jsx)(\"div\",{className:h()(l.Root,\"noOpinionatedGlobalStyles\"),style:y,children:(0,r.jsxs)(p,{accentColor:t,dullColor:n,successColor:s,warningColor:c,errorColor:i,bodyTextColor:d,successTextColor:u,warningTextColor:x,errorTextColor:m,variants:C,children:[v,!1]})})})})})});function w(e){const{children:o}=e,{formFactorOverride:t}=(0,n.useContext)(u);return(0,r.jsx)(d,{formFactor:t,children:o})}},"
+        },
+        {
+          "start": "Fe=(0,p.PA)(function(",
+          "end": "85273:",
+          "original_sha256": "678d64c4f47da1e718808cfdb5c9d52731ed1e70beba6822ac15690dc3ae909a",
+          "patched_sha256": "5d25ae3391b8587b10e94654a4017f0c5f4bd2761213e40c71e280afa9483ea2",
+          "replacement": "Fe=(0,p.PA)(function(s){let l=s.collection.llfP??s.collection.visibleApps.slice().sort((e,s)=>s.minutes_playtime_forever-e.minutes_playtime_forever).slice(0,13),i=null;if(l.length>0){let s=l[0];i=(0,e.jsx)(\"div\",{className:Q().CollectionBG,children:(0,e.jsx)(a.z,{className:Q().BackgroundImage,eAssetType:I.b_A,app:s})})}const c=l.map(s=>(0,e.jsx)(\"div\",{className:Q().CapsuleImage,children:(0,e.jsx)(a.z,{className:Q().Image,eAssetType:I.b_A,app:s})},s.appid)),n=Q()[`Has${c.length}Apps`];return(0,e.jsxs)(\"div\",{className:(0,S.A)(Q().CollectionImage,n),children:[i,(0,e.jsx)(\"div\",{className:Q().DisplayCaseContainerBounds,children:(0,e.jsx)(\"div\",{className:Q().DisplayCaseContainer,children:(0,e.jsx)(\"div\",{className:Q().AppGrid,children:c})})})]})})}),"
+        },
+        {
+          "start": "S([j.oI],L.prototype,\"MergeFromStorageFormat\",1);",
+          "end": "let Q=L;",
+          "original_sha256": "fe55dfa0f19fa410ea68bee9931b58aca3358aeccee68891edc4fe04a1b51609",
+          "patched_sha256": "768c07a86ebe476058a3c81999c597316458a2dcf1bff6b1ac861f45e6c7349b",
+          "replacement": "S([j.oI],L.prototype,\"MergeFromStorageFormat\",1);S([(0,e.EW)({keepAlive:!0})],L.prototype,\"llfP\",1);S([(0,e.EW)({keepAlive:!0})],L.prototype,\"llfN\",1);"
+        },
+        {
+          "start": "function I(",
+          "end": "66363:",
+          "original_sha256": "297a369d1f78b4ecc598fded7f309b749197ddb443339907a73431f71b8b8377",
+          "patched_sha256": "7ecfaac27a2564df4891a40d60564d1c6dc103a8f257521223dc3529584168c4",
+          "replacement": "function I(t,r,u){const l=e.useRef(),d=e.useRef(),f=e.useRef(new Map),[R,b]=e.useState(\"\"),m=e.useRef((0,n.b$)());e.useEffect(()=>{l.current=void 0,d.current=void 0},[r]);const h=e.useCallback((e,r)=>t[e].children[r],[t]),I=e.useCallback(()=>{const e=l.current,r=d.current,n=f.current.get(e+\"_\"+r);n?(c(\"F\",e,r,t[e].children[r].display_name,n),n.TakeFocus()):c(e,r,\"W\")},[t]),T=e.useCallback(e=>{e||(l.current=void 0,d.current=void 0)},[]),_=e.useRef(),g=e.useCallback(e=>void 0!==_.current||C.current>0&&!!e?.Element&&(e.Element.scrollIntoView({behavior:\"auto\",block:\"nearest\"}),!0),[]),v=e.useCallback((e,t,r)=>{r?f.current.set(e+\"_\"+t,r):f.current.delete(e+\"_\"+t),!g()&&e==l.current&&t==d.current&&r&&!r.BHasFocus()&&(c(\"B\",e,t,r),I())},[I,g]),D=e.useCallback((e,r,n)=>{if(g())return!0;c(\"P\",m.current.current),m.current.current?.TakeFocus(),e=(0,s.OQ)(e,0,t.length);const a=t[e];r=(0,s.OQ)(r,0,a.children.length-1);let i=a.refSection.current.offsetTop;const p=Math.floor(r/a.refItemsPerRow.current);i+=p*(a.childHeight+a.nGridRowGap);const f=window.getComputedStyle(u),R=parseInt(f.getPropertyValue(\"scroll-padding-top\"))||0;return i=i-R+8,new Promise((t,a)=>{const s=()=>{l.current=e,d.current=r,c(\"S\",u.scrollTop),_.current=void 0,t()};if(n)u.scrollTo({top:i}),window.setTimeout(()=>{s()},100);else{const e={msDuration:350,timing:\"cubic-in-out\",onComplete:s};_.current=new o.JV(u,{scrollTop:i},e),_.current.Start()}})},[g,t,u]),F=e.useCallback(e=>{if(g())return!0;let n,u,o;if(1==t.length){let c;if(r==a.eL)c=w;else if(r==a.TB)c=j;else{if(r!=a.wD)return!1;c=y}const l=c(t[0],d.current,e);if(l.bFinished)return!0;n=l.nextItem,u=0,o=l.nextTargetName}else if(t.length>1){const r=(0,s.OQ)(l.current+e,0,t.length-1);if(c(\"M\",l.current,\"t\",r),l.current==r)return!0;u=r,n=0,o=t[r].subSectionName}return c(\"S\",n,h(0,n).display_name),b(o),D(u,n)},[g,h,D,t,r]),k=e.useCallback(e=>{if(r!=a.eL||1!=t.length)return!1;const n=w(t[0],0,1,void 0,e);if(!n.bFinished){b(n.nextTargetName);const e=D(0,n.nextItem,!0);return!1!==e&&(!0!==e&&e.then(()=>{I(),b(\"\")}),!0)}return!0},[r,t,D,I]),C=e.useRef(0),G=e.useMemo(()=>r==a.eL&&1==t.length&&t[0].children.some(e=>!e.sort_as||p(e.sort_as)>\"z\"),[r,t]);return{onItemFocused:(e,t)=>{c(\"F\",e,t,h(e,t).display_name),l.current=e,d.current=t},onGamepadButtonDown:e.useCallback(e=>{if(e.detail.button==i.pR.TRIGGER_LEFT||e.detail.button==i.pR.TRIGGER_RIGHT){c(l.current,d.current,h(l.current,d.current)?.display_name);const t=e.detail.button==i.pR.TRIGGER_RIGHT?1:-1,r=F(t);return!1!==r&&(e.stopPropagation(),e.preventDefault(),!0!==r&&r.then(()=>{c(\"F\"),I(),b(\"\")}),!0)}if((e.detail.button==i.pR.DIR_UP||e.detail.button==i.pR.DIR_DOWN)&&(e.detail.is_repeat&&C.current++,C.current>=5)){if(G)return!1;let t;e.detail.button==i.pR.DIR_DOWN?(c(\"D\"),t=1):(c(\"U\"),t=-1);const r=F(t);return!1!==r&&(e.stopPropagation(),e.preventDefault(),!0!==r&&r.then(()=>{c(\"R\",C.current),C.current<5&&(c(\"F\"),I(),b(\"\"))}),!0)}return!1},[F,h,I,G]),onGamepadButtonUp:e.useCallback(e=>{c(e.detail.button,C.current),(e.detail.button==i.pR.DIR_UP||e.detail.button==i.pR.DIR_DOWN)&&C.current>4&&!G&&(c(\"X\"),void 0===_.current&&I(),b(\"\")),C.current=0},[I,G]),onFocusWithin:T,scrollIntoViewHandler:g,strFastScrollTo:R,bindNavRef:v,navRefPlaceholder:m,FastScrollTo:k}}}),"
+        },
+        {
+          "start": "GetAppCountWithToolsFilter(",
+          "end": "ClearAppCounts(){",
+          "original_sha256": "25183750cdd3499a4a698ad34ddfb1a0b8bb290678eeb71800b81c01935986cf",
+          "patched_sha256": "aaae17789b369fe2b58f309a5359aa9e5346e2370f491091a8734f340ce59338",
+          "replacement": "GetAppCountWithToolsFilter(t){const e=t.hash,i=this.m_mapFilterToAppCounts;return i.has(e)||(i.set(e,(this instanceof Q?Array.from(this.apps,t=>s.tw.GetAppOverviewByAppID(t)).filter(Boolean):this.allApps).filter(e=>\"hidden\"==this.id?!e.BIsAppBlocked():!(!he.BIsVisible(e)||e&&e.app_type==N.B7&&!t.BIncludesTools())).length),O.Debug(this.displayName,this.id,e,i.get(e))),i.get(e)}"
+        },
+        {
+          "start": "pe=(0,p.PA)(",
+          "end": "function Pe(){",
+          "original_sha256": "acb2d015da0b13d38652d0bd58673758a5f3e9dca1057c1e34fb3aabe916ea40",
+          "patched_sha256": "bbbee250d5b4232b2654685c794516bb511b1ee1f1b3a26865fb48e961250ddd",
+          "replacement": "pe=(0,p.PA)(n=>{const{coverSize:t,scrollElement:i,autofocus:o,filterCollections:l,bHideCreateButton:r,...d}=n,c=(0,T.Qn)(),s=j.useContext(K.g),a=j.useCallback(()=>{const e=c?(0,U.YQ)(s.libraryWidth,s.libraryHeight):u.o.GetComputedDisplaySize(t);let n;return c?n=$:e==N.yl?n=Oe:e==N.m2?n=fe:e==N.Sd&&(n=X),n},[t,c,s]);let m=!1!==o;const p=ke(l||[]),f=a(),w={subSectionName:\"\",sectionIndex:0,children:p.map(e=>new De(e.displayName)),childHeight:f.childHeight,nGridRowGap:f.gridRowGap,refSection:j.createRef(),refItemsPerRow:j.createRef()};let G=0;Pe()&&(w.children.unshift(new De(\"\")),G++),r||(w.children.unshift(new De(\"\")),G++);const{onItemFocused:x,onGamepadButtonDown:C,onGamepadButtonUp:S,onFocusWithin:b,scrollIntoViewHandler:I,strFastScrollTo:D,navRefPlaceholder:y,bindNavRef:F}=(0,E.J)([w],h.eL,i),{onFocusWithinContainer:H,fastScrollOverlay:P,onGamepadDirectionGridContainer:W}=(0,M.J)(b,D,y),B=p.map((n,t)=>(0,e.jsx)(R.Ei,{children:(0,e.jsx)(mt,{bStartFocused:m&&0===t,collection:n,fnScrollIntoViewHandler:I,onGamepadFocus:()=>x(0,t+G),navRef:e=>F(0,t+G,e)})},n.id));return Pe()&&B.unshift((0,e.jsx)(R.Ei,{children:(0,e.jsx)(_e,{})},\"ea-button\")),r||B.unshift((0,e.jsx)(R.Ei,{children:(0,e.jsx)(Ve,{})},\"new-collection-button\")),(0,e.jsxs)(g.Z,{onButtonDown:C,onButtonUp:S,onFocusWithin:H,children:[(0,e.jsx)(g.Z,{onGamepadDirection:W,ref:w.refSection,children:(0,e.jsx)(v.i,{...d,childWidth:f.childWidth,childHeight:f.childWidth,gridColumnGap:f.gridColumnGap,gridRowGap:f.gridRowGap,scaleGridItems:1,renderOutsideRows:2,paddingLeft:0,paddingRight:0,gridClassName:Q().Grid,scrollElement:i,childElements:B,scrollIntoViewType:1,name:\"AllCollectionsGrid\",refItemsPerRow:w.refItemsPerRow})}),P]})});"
+        },
+        {
+          "start": "const L=class Iu extends T{",
+          "end": "S([e.sH],L.prototype,\"m_filter\",2)",
+          "original_sha256": "f22cea68fc008bf84afb20876eba5d9cde386d844f3a4dff14684fddda2c7896",
+          "patched_sha256": "82f427b839de7d7b4ddb9916d7b65809525dcd7ae498bad7032a5429fab499ea",
+          "replacement": "const L=class Iu extends T{m_filter=void 0;m_setAddedManually=void 0;m_setRemovedManually=void 0;constructor(t,s){super(t,s),(0,e.Gn)(this)}get displayName(){return this.m_strName}set displayName(e){this.m_strName=e}get allApps(){let e;return O.Debug(\"Apps\"),Array.from(this.apps.values()).map(e=>s.tw.GetAppOverviewByAppID(e)).filter(e=>!!e).sort((t,i)=>(e??=s.tw.m_collator.compare)(t.sort_as,i.sort_as))}get llfP(){let e;try{e=function(e,t,s){const i=[],l=[];let a;const p=(e,s,i,l)=>l-s||(a??=t.m_collator.compare)(e.sort_as,i.sort_as);for(const a of e.apps.values()){const r=t.GetAppOverviewByAppID(a);if(!r||!(\"hidden\"===e.id?!r.BIsAppBlocked():s.BIsVisible(r)))continue;const d=r.minutes_playtime_forever;if(!Number.isFinite(d))return null;if(13===i.length&&p(r,d,i[12],l[12])>=0)continue;let o=i.length;for(;o>0&&p(r,d,i[o-1],l[o-1])<0;)o--;i.splice(o,0,r),l.splice(o,0,d),i.length>13&&(i.pop(),l.pop())}return i}(this,s.tw,he)}catch{}return e??this.visibleApps.slice().sort((e,t)=>t.minutes_playtime_forever-e.minutes_playtime_forever).slice(0,13)}get llfN(){if(\"hidden\"==this.id)return;const t=(Q.llfM??=(0,e.EW)(()=>{const e=h.n6.collectionsAppFilter,t=e.MatchesImpl.bind({m_filterSpec:e.ToStorageFormat()}),i=new Map;for(const[e,l]of s.tw.m_mapApps)try{l&&he.BIsVisible(l)&&t(l)&&i.set(e,!0)}catch(t){i.set(e,{e:t})}return i},{keepAlive:!0})).get();let i=0;for(const e of this.apps){const s=t.get(e);if(s){if(!0!==s)throw s.e;i++}}return i}UpdateApps(e,t){const s=new Set(this.m_setApps);let i;if(this.m_filter&&!this.m_filter.bIsEmpty){const l={m_filterSpec:this.m_filter.ToStorageFormat()};for(let t of i??=e.filter(e=>e.visible_in_game_list))this.m_filter.MatchesImpl.call(l,t)?s.add(t.appid):s.delete(t.appid);for(let e of t)s.delete(e)}else s.clear();this.m_setAddedManually.forEach(e=>s.add(e)),this.m_setRemovedManually.forEach(e=>s.delete(e));let l=!1;if(this.m_setApps.size>0)for(let t of i??=e.filter(e=>e.visible_in_game_list))if(s.has(t.appid)){l=!0;break}(s.size!==this.m_setApps.size||[...s].some(e=>!this.m_setApps.has(e)))&&(b.Debug(this.id),this.m_setApps=s,this.ClearAppCounts()),l&&this.ClearAppCounts()}UpdateFriendOwnedGames(e){this.BIncludesFriend(e)&&(b.Debug(`Updating friend ${e} in collection ${this.id} (${this.displayName})`),this.UpdateAllApps())}BIncludesFriend(e){return(this.m_filter?.GetSelectedOptions(l.Tx)||[]).indexOf(e)>=0}get visibleApps(){return O.Debug(`Computing visibleApps for ${this.displayName} (${this.id}), ${this.bIsDynamic?\"dynamic\":\"static\"}`),this.allApps.filter(e=>\"hidden\"==this.id?!e.BIsAppBlocked():he.BIsVisible(e))}get bIsDynamic(){return!!this.internalAppFilter}get bIsDeletable(){return!he.BIsSystemCollectionId(this.id)}AsDeletableCollection(){return this.bIsDeletable?this:null}get bIsEditable(){return!he.BIsSystemCollectionId(this.id)&&!he.BIsPartnerCollectionId(this.id)}AsEditableCollection(){return this.bIsEditable?this:null}get bAllowsDragAndDrop(){return!he.BIsPartnerCollectionId(this.id)}AsDragDropCollection(){return this.bAllowsDragAndDrop?this:null}get internalAppFilter(){return this.m_filter}get internalAddedList(){return this.m_setAddedManually}get internalRemovedList(){return this.m_setRemovedManually}async Save(){this.UpdateAllApps(),await he.SaveCollection(this)}async Delete(){await he.DeleteCollection(this.id)}AddApps(e){const t=new Array;for(const s of e)t.push(s.appid),this.m_setAddedManually.add(s.appid),this.m_setRemovedManually.delete(s.appid);this.Save()}RemoveApps(e){const t=new Array;for(const s of e)t.push(s.appid),this.m_setAddedManually.delete(s.appid),this.bIsDynamic&&this.m_setRemovedManually.add(s.appid);this.Save()}FreezeToStatic(){this.m_filter=void 0,this.m_setAddedManually=new Set(this.apps),this.m_setRemovedManually=new Set,this.m_setApps.clear(),this.Save()}ToStorageFormat(){const e={id:this.id,name:this.displayName,added:[],removed:[]},t={id:this.id,added:[],removed:[]};this.m_filter&&(e.filterSpec=this.m_filter.ToStorageFormat());for(const i of this.m_setAddedManually)(s.tw.GetAppOverviewByAppID(i)?.BIsModOrShortcut()?t:e).added.push(i);for(const i of this.m_setRemovedManually)(s.tw.GetAppOverviewByAppID(i)?.BIsModOrShortcut()?t:e).removed.push(i);return{roamingData:e,localData:t}}MergeFromStorageFormat(e){const{roamingData:t,localData:s}=e;this.m_setAddedManually=new Set,this.m_setRemovedManually=new Set,he.BIsPartnerCollectionId(this.id)?this.m_filter=u.E6.ForPartner(this.id):(this.m_filter=t.filterSpec&&u.E6.FromStorageFormat(t.filterSpec),t.added&&G(t.added,this.m_setAddedManually),s&&s.added&&G(s.added,this.m_setAddedManually),this.bIsDynamic&&(t.removed&&G(t.removed,this.m_setRemovedManually),s&&s.removed&&G(s.removed,this.m_setRemovedManually))),this.UpdateAllApps()}static FromStorageFormat(e){const t=new Iu(e.roamingData.id,e.roamingData.name);return t.MergeFromStorageFormat(e),t}static NewCollection(e,t,s){const i=new Iu(Y(H()),e);return i.m_filter=t,i.m_setAddedManually=new Set(s.map(e=>e.appid)),i.m_setRemovedManually=new Set,i.UpdateAllApps(),i}static FromUserTag(e,t){const s=new Iu(Y(\"from-tag-\"+e),e);return s.m_filter=void 0,s.m_setAddedManually=new Set(t.map(e=>e.appid)),s.m_setRemovedManually=new Set,s.UpdateAllApps(),s}static NewSystemCollection(e,t){const s=new Iu(e,he.SystemCollectionIdToName(e));return s.m_filter=void 0,s.m_setAddedManually=new Set(t.map(e=>e.appid)),s.m_setRemovedManually=new Set,s.UpdateAllApps(),s}};"
+        }
+      ],
+      "contracts": [
+        {
+          "literal": "17215:(je=>{je.exports={Root:\"_2KPA3I9eXE9r251_-GX_iv\"}})"
+        },
+        {
+          "literal": "Matches(we){return this.MatchesImpl(we)}"
+        },
+        {
+          "literal": "MatchesImpl(we){return!(!$(this.m_filterSpec.filterGroups[L.Wc],pe(we))||!super.MatchesImpl(we))}"
+        },
+        {
+          "literal": "CompareSortAs(V,ee){return this.m_collator.compare(V.sort_as,ee.sort_as)}"
+        },
+        {
+          "literal": "ToStorageFormat(){return(0,s.HO)(this.m_filterSpec)}"
+        },
+        {
+          "literal": "m_mapFilterToAppCounts=new Map;"
+        },
+        {
+          "literal": "let Q=L;"
+        },
+        {
+          "literal": "var e=t(89193),a=t(37322),i=t(92819),s=t(90544)"
+        },
+        {
+          "literal": "h=t(4257),c=t(94601),f=t(1345)"
+        },
+        {
+          "literal": "get bIsEditable(){return!he.BIsSystemCollectionId(this.id)&&!he.BIsPartnerCollectionId(this.id)}AsEditableCollection(){return this.bIsEditable?this:null}"
+        },
+        {
+          "literal": "var e=t(62540),a=t(83036),i=t(72500),s=t(90544),r=t(59671),n=t(37561)"
+        },
+        {
+          "start": "BIsVisible(re){const se=typeof re==\"number\"?",
+          "end": "InitSystemCollectionNameMap(){",
+          "sha256": "41a264334f0f21aeceffa847ecaf8df3eef87a445c3a098fc912974f1f268d9c"
+        },
+        {
+          "start": "GetAppOverviewByAppID(V){return this.m_mapApps.has(V)?",
+          "end": "GetAppOverviewByGameID(V){",
+          "sha256": "3d53c2c7f05ada1f4a2c6a67933b090f8739be809cd9596ebf6acc459066859f"
+        },
+        {
+          "start": "function p(N){const x=N[0].toLowerCase()",
+          "end": "function I(",
+          "sha256": "40e3bd25ccff9eeba4fe993899de10c6097161590619739ae1077c3efde1d225"
+        },
+        {
+          "start": "function $(Ke,we){",
+          "end": "function pe(Ke){",
+          "sha256": "e3f02642f0ebcea4fef586e51fcfc2d2d213f203662fe5d65c7e80fb9e102602"
+        },
+        {
+          "start": "function Se(Ke){",
+          "end": "function Ve(Ke){",
+          "sha256": "8c96a23cbc9a7a589baddaa0e6a1b7ab14ceb9a8434bf26b622d61862c46c8db"
+        },
+        {
+          "start": "function Pe(Ke){",
+          "end": "function ke(Ke){",
+          "sha256": "e1179b0e47bf5339fe4156c260ec1eed84f3ed7e025272ddb9a63f194144850f"
+        },
+        {
+          "start": "function Ve(Ke){",
+          "end": "function _e(Ke){",
+          "sha256": "f26708ae1a3c70523a9685ea46f2c9de7c4334ec2249d7d60a625b86437cd8cb"
+        },
+        {
+          "start": "function mt(Ke){",
+          "end": "function Fe(Ke,we,Ae){",
+          "sha256": "c27958459b7a7ca1b1dd222f0f96afe947695cf7055b61476426200613c0b1db"
+        },
+        {
+          "start": "function _e(Ke){",
+          "end": "function xe(Ke){",
+          "sha256": "2cf6de60846b8a429ef125e5a119dc96d91d7b0c9f210a16a8724fe0053bf104"
+        },
+        {
+          "start": "function xe(Ke){",
+          "end": "function Ue(Ke){",
+          "sha256": "9af2064a42fba3f5fc0a70529e0b1879d2cd8c5fc56b66637b78ce6167012254"
+        },
+        {
+          "start": "function Ue(Ke){",
+          "end": "function Re(Ke){",
+          "sha256": "5b6fe4a7e4613ad5a0b3508dd07f859b22bb98dfc7d4763d1301db8738e41adb"
+        }
+      ]
+    }
+  ]
+}
