@@ -13,7 +13,7 @@ from install import PAYLOAD
 
 HERE = Path(__file__).resolve().parent
 SOURCES = (*PAYLOAD, 'bootstrap.py', 'build_release.py', 'install.sh', 'test_packaging.py',
-           'generate_compat.py', 'test_compat.py', 'build_native.py')
+           'generate_compat.py', 'test_compat.py', 'test_local.py', 'test_model.py', 'build_native.py')
 ROOT = HERE.parent
 DOCUMENTS = ('README.md', 'README.zh-CN.md', 'LICENSE')
 ARCHIVE_FILES = (*DOCUMENTS, 'BUILDING.md', '.gitignore',

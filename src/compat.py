@@ -40,7 +40,8 @@ def run_syntax(texts, source='', offsets=(), budget_candidates=(), collect=False
     if platform.system() == 'Darwin':
         runner = Path(os.environ.get('LLF_DEVELOPMENT_QJS', str(runner)))
     command = ['/usr/bin/nice', '-n', '10', str(runner), '--memory-limit', str(384 * 1024), '--stack-size', '2048',
-               '--std', '-I', str(HERE / 'acorn.js'), '-I', str(HERE / 'terser.js'), str(HERE / 'syntax.js')]
+               '--std', '-I', str(HERE / 'acorn.js'), '-I', str(HERE / 'terser.js'), '-I', str(HERE / 'local.js'),
+               '-I', str(HERE / 'model.js'), str(HERE / 'syntax.js')]
     request = json.dumps({'texts': texts, 'source': source, 'offsets': list(offsets),
                           'budget_candidates': list(budget_candidates), 'collect_spellings': collect}, ensure_ascii=True)
     try:
@@ -91,6 +92,30 @@ def budget_candidates(source, metadata):
             saving += len(item['raw'].encode()) - len(item['replacement'].encode())
             if saving >= 4096:
                 break
+    if saving < 4096:
+        occupied = {item['start'] for item in found}
+        strings = re.compile(r'"(?:[^"\\\r\n]|\\.){0,1024}"')
+        for match in strings.finditer(source):
+            if match.start() in occupied:
+                continue
+            try:
+                value = json.loads(match.group())
+            except ValueError:
+                continue
+            replacement = json.dumps(value, ensure_ascii=False)
+            replacement = re.sub('[\u2028\u2029\u202a-\u202e\u2066-\u2069]',
+                                 lambda char: '\\u' + format(ord(char[0]), '04x'), replacement)
+            single = "'" + replacement[1:-1].replace('\\"', '"').replace("'", "\\'") + "'"
+            replacement = min([replacement, single], key=len)
+            try:
+                space = len(match.group().encode()) - len(replacement.encode())
+            except UnicodeError:
+                continue
+            if space > 0:
+                found.append({'start': match.start(), 'raw': match.group(), 'replacement': replacement})
+                saving += space
+            if saving >= 4096 or len(found) >= 256:
+                break
     return found
 
 
@@ -103,12 +128,12 @@ def byte_offsets(source, offsets):
     return output
 
 
-def run_native(source, offsets, budgets):
+def run_native(source, offsets, budgets, methods=()):
     path = HERE / 'libsyntax-linux-x86_64.so'
     if platform.system() == 'Darwin':
         path = Path(os.environ.get('LLF_DEVELOPMENT_LIBRARY', str(path)))
     command = [sys.executable, str(HERE / 'native_syntax.py'), str(path)]
-    request = json.dumps({'source': source, 'offsets': list(offsets), 'budget_candidates': budgets})
+    request = json.dumps({'source': source, 'offsets': list(offsets), 'budget_candidates': budgets, 'methods': list(methods)})
     try:
         call = subprocess.run(command, input=request, text=True, encoding='utf-8', capture_output=True,
                               timeout=20, env={'LANG': 'C.UTF-8'})
@@ -158,6 +183,40 @@ def module_ranges(source):
     return modules, ranges
 
 
+def module_key(scope):
+    raw = scope.split(':', 1)[0].strip()
+    match = re.fullmatch(r'(\d+)(?:e(\d+))?', raw)
+    if not match or len(match[1]) > 12 or len(match[2] or '') > 2:
+        return raw
+    exponent = int(match[2] or 0)
+    return str(int(match[1]) * 10 ** exponent) if exponent <= 12 else raw
+
+
+def ast_method_rows(source, requests, units, add):
+    raw = source.encode()
+    positions = sorted({unit[key] for unit in units for key in ['start', 'end', 'context_start', 'context_end']})
+    offsets, previous, chars = {}, 0, 0
+    for position in positions:
+        chars += len(raw[previous:position].decode())
+        offsets[position], previous = chars, position
+    for key, _, expected, rows, rule in requests:
+        name = re.match(r'(?:async\s+|get\s+)?([A-Za-z_$][\w$]*)\s*\(', rule.get('start', rule.get('literal', '')))
+        if not name or expected['header'] is None:
+            continue
+        for unit in units:
+            if unit['name'] != name[1] or unit['factory_kind'] != 'arrow_function' or module_key(unit['module']) != module_key(expected['scope']):
+                continue
+            start, end = offsets[unit['start']], offsets[unit['end']]
+            text = source[start:end]
+            direct = raw_kind(text, rule, key)
+            context = source[offsets[unit['context_start']]:offsets[unit['context_end']]]
+            if len(context) > 800000:
+                continue
+            rows.append({'start': start, 'end': end, 'text': text, 'request': None if direct else add(text),
+                         'direct': direct, 'headers': [add({'factory_header': context, 'bindings': expected['bindings']})],
+                         'header_verified': False, 'scope_start': offsets[unit['context_start']], 'native': True})
+
+
 def scoped_matches(source, rule, expected, ranges):
     matches = []
     for begin, limit in ranges.get(expected['scope'], []):
@@ -205,9 +264,9 @@ def accepted_rows(rows, expected, key, checked, offsets, valid):
     accepted = []
     for row in rows:
         value = checked['results'][row['request']].get('canonical') if row['request'] is not None else None
-        if (value is None and not row['direct']) or offsets[row['start']] not in valid:
+        if (value is None and not row['direct']) or (not row.get('native') and offsets[row['start']] not in valid):
             continue
-        if offsets[row['scope_start']] not in valid:
+        if not row.get('native') and offsets[row['scope_start']] not in valid:
             continue
         headers = [checked['results'][i].get('canonical') for i in row['headers']]
         if not row['header_verified'] and not any(value is not None and digest(value) == expected['header'] for value in headers):
@@ -215,7 +274,7 @@ def accepted_rows(rows, expected, key, checked, offsets, valid):
         for kind in ('original', 'patched') if key == 'methods' else ('original',):
             if row['direct'] == kind or (value is not None and digest(value) == expected[kind]):
                 accepted.append({**row, 'kind': kind})
-    return accepted
+    return list({(row['start'], row['end'], row['kind']): row for row in accepted}.values())
 
 
 def prepare(source, profile, metadata):
@@ -232,24 +291,87 @@ def prepare(source, profile, metadata):
             expected = metadata[key][index]
             rows = prepare_rows(source, rule, expected, key, modules, ranges, add)
             positions.extend(position for row in rows for position in (row['start'], row['scope_start']))
-            requests.append((key, index, expected, rows))
+            requests.append((key, index, expected, rows, rule))
     pool = budget_candidates(source, metadata)
     positions.extend(position for item in pool for position in (item['start'], item['start'] + len(item['raw'])))
-    offsets = byte_offsets(source, positions)
+    names = {'UpdateApps', 'InitAfterLogin', 'UpdateAppOverview'}
+    for *_, rule in requests:
+        match = re.match(r'(?:async\s+|get\s+)?([A-Za-z_$][\w$]*)\s*\(', rule.get('start', rule.get('literal', '')))
+        if match:
+            names.add(match[1])
+    selector = r'\b(?:' + '|'.join(re.escape(name) for name in sorted(names)) + r')\s*\([^{};]{0,256}\)\s*\{'
+    method_positions = [match.start() for match in re.finditer(selector, source)]
+    if len(method_positions) > 512:
+        raise Incompatible('Too many local operation candidates')
+    offsets = byte_offsets(source, [*positions, *method_positions])
     budget = [{**item, 'start': offsets[item['start']], 'end': offsets[item['start'] + len(item['raw'])]} for item in pool]
-    native = run_native(source, offsets.values(), budget)
+    native = run_native(source, offsets.values(), budget, [offsets[pos] for pos in method_positions])
+    ast_method_rows(source, requests, native['units'], add)
     budget_requests = [(index, add({'literal_pair': [pool[index]['raw'], pool[index]['replacement']]}))
                        for index in native['budgets']]
     checked = run_syntax(texts)
     valid = set(native['locations'])
     found = {'methods': {}, 'contracts': {}}
-    for key, index, expected, rows in requests:
+    for key, index, expected, rows, _ in requests:
         accepted = accepted_rows(rows, expected, key, checked, offsets, valid)
         if len(accepted) == 1:
             found[key][index] = accepted[0]
     found['spellings'] = [(pool[index]['start'], pool[index]['start'] + len(pool[index]['raw']), pool[index]['replacement'])
                           for index, request in budget_requests if checked['results'][request].get('equal')]
+    found['local_units'] = native['units']
+    verify_model(source, metadata, found)
     return found
+
+
+def verify_model(source, metadata, found):
+    group = next(group for group in metadata['groups'] if group['id'] == 'wake')
+    if not metadata.get('wake_model'):
+        return
+    for index in group['contracts']:
+        found['contracts'].pop(index, None)
+    raw = source.encode()
+    contexts = [{'model_context': raw[unit['context_start']:unit['context_end']].decode(),
+                 'outer_bindings': unit['outer_bindings'], 'wake': True} for unit in found['local_units']
+                if unit['name'] == 'UpdateAppOverview' and unit['context_end'] - unit['context_start'] <= 800000]
+    if len(contexts) != 1:
+        return
+    result = run_syntax(contexts)['results'][0]
+    if result.get('model') is not None and digest(result['model']) == metadata['wake_model']:
+        unit = next(unit for unit in found['local_units'] if unit['name'] == 'UpdateAppOverview')
+        if raw[unit['start']:unit['end']].decode() != result.get('wake_source'):
+            return
+        start, end = [len(raw[:position].decode()) for position in (unit['start'], unit['end'])]
+        found['methods'][group['methods'][0]] = {'start': start, 'end': end, 'kind': 'original',
+                                               'replacement': result['wake_replacement']}
+        found['contracts'].update({index: True for index in group['contracts']})
+
+
+def local_changes(source, units, active, groups):
+    raw, requests, starts = source.encode(), [], []
+    for unit in units:
+        if unit['name'] not in {'UpdateApps', 'InitAfterLogin'}:
+            continue
+        method = raw[unit['start']:unit['end']].decode()
+        context = raw[unit['context_start']:unit['context_end']].decode()
+        if len(context) > 800000:
+            continue
+        requests.append({'local_unit': {'source': method, 'context': context, 'outer_bindings': unit['outer_bindings']}})
+        starts.append((len(raw[:unit['start']].decode()), method))
+    if not requests:
+        return
+    candidates = {}
+    for (start, method), result in zip(starts, run_syntax(requests)['results']):
+        feature = result.get('feature')
+        if not feature or feature in active or feature == 'collections' and 'library' in active:
+            continue
+        edits = [(start + a, start + b, text) for a, b, text in spelling_edits(method, result['edits'])]
+        candidates.setdefault(feature, []).append(edits)
+    occupied = [edit for changes in groups.values() for edit in changes]
+    for feature, choices in candidates.items():
+        if len(choices) != 1 or any(a < end and start < b for a, b, _ in choices[0] for start, end, _ in occupied):
+            continue
+        active.append(feature)
+        groups[feature] = choices[0]
 
 
 def known(source, profile, metadata):
@@ -271,7 +393,7 @@ def fit_budget(source, active, paused, groups, spellings):
     def available(changes):
         return sum(len(source[a:b].encode()) - len(text.encode()) for a, b, text in spellings
                    if not any(a < end and start < b for start, end, _ in changes))
-    for name in ['startup', 'library', 'navigation', 'wake']:
+    for name in ['collections', 'startup', 'library', 'navigation', 'wake']:
         changes = [change for group in active for change in groups[group]]
         if delta(changes) <= available(changes):
             return changes
@@ -301,8 +423,15 @@ def plan(source, profile, metadata, css):
             item = found['methods'][index]
             kinds.add(item['kind'])
             if item['kind'] == 'original':
-                replacement = profile['methods'][index]['replacement'] if exact is not None else metadata['methods'][index]['replacement']
+                replacement = profile['methods'][index]['replacement'] if exact is not None else item.get('replacement', metadata['methods'][index]['replacement'])
                 changes.append((item['start'], item['end'], replacement))
+    if exact is None:
+        previous = set(active)
+        local_changes(source, found.get('local_units', []), active, groups)
+        if set(active) - previous:
+            kinds.add('original')
+        if 'startup' in active:
+            paused.pop('startup', None)
     changes = fit_budget(source, active, paused, groups, found.get('spellings', []))
     if not active:
         raise Incompatible('No compatible optimization group')

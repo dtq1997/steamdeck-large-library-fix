@@ -92,7 +92,8 @@ def group_details(result):
     labels = {'wake': text('Wake data sync', '唤醒资料同步'),
               'startup': text('Startup wait', '启动等待'),
               'library': text('Library browsing', '游戏库浏览'),
-              'navigation': text('Navigation and scrolling', '导航与滚动')}
+              'navigation': text('Navigation and scrolling', '导航与滚动'),
+              'collections': text('Collection comparison', '合集成员比较')}
     parts = []
     if result.get('active'):
         parts.append(text('Active: ', '已生效：') + ', '.join(labels.get(k, k) for k in result['active']))

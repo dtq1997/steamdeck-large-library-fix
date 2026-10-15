@@ -14,7 +14,7 @@ from pathlib import Path
 
 import compat
 
-VERSION = "0.4.14"
+VERSION = "0.4.15"
 HERE = Path(__file__).resolve().parent
 
 
@@ -182,7 +182,7 @@ def build(data, rules):
         # Direct developer calls retain the established known-client behavior.
         return build_legacy(data, rules)
     source = data.decode('utf-8')
-    changes = list(plan['changes'])
+    changes = [tuple(edit) for edit in plan['changes']]
     delta = sum(len(replacement.encode()) - len(source[start:end].encode()) for start, end, replacement in changes)
     if delta > 0:
         for start, end, replacement in plan.get('spellings', []):
@@ -202,7 +202,76 @@ def build(data, rules):
     spare = len(data) - len(output)
     if spare < 0:
         raise Unsupported('Cannot preserve client file size')
-    return output + (b'\n' + b' ' * (spare - 1) if spare else b'')
+    output += b'\n' + b' ' * (spare - 1) if spare else b''
+    if plan.get('syntax_checked'):
+        try:
+            compat.run_native(output.decode('utf-8'), [], [])
+        except compat.Incompatible as error:
+            raise Unsupported('Generated client syntax check failed: ' + str(error)) from error
+    if plan.get('_output_sha256') and sha(output) != plan['_output_sha256']:
+        raise Unsupported('Compiled patch cache does not reproduce its verified output')
+    return output
+
+
+def compiler_key(base, profile, css):
+    files = ['engine.py', 'compat.py', 'native_syntax.py', 'rules.json', 'compatibility.json',
+             'syntax.js', 'local.js', 'model.js', 'acorn.js', 'terser.js',
+             'qjs-linux-x86_64', 'libsyntax-linux-x86_64.so']
+    paths = [HERE / name for name in files]
+    paths.extend(Path(os.environ[name]) for name in ['LLF_DEVELOPMENT_QJS', 'LLF_DEVELOPMENT_LIBRARY'] if os.environ.get(name))
+    value = {'source': sha(base), 'profile': profile['tested_client'], 'version': VERSION,
+             'css': sha(css) if css is not None else None, 'platform': os.uname().sysname,
+             'compiler': [sha(path.read_bytes()) for path in paths]}
+    return sha(json.dumps(value, sort_keys=True).encode())
+
+
+def cached_plan(base, profile, css, state, record):
+    key = record.get('plan_cache') if record else None
+    if state is None or not isinstance(key, str) or len(key) != 64 or any(c not in '0123456789abcdef' for c in key):
+        return None
+    directory = state / 'plans'
+    path = directory / (key + '.json')
+    if directory.is_symlink() or path.is_symlink():
+        return None
+    try:
+        if path.stat().st_size > 2 * 1024 * 1024 or compiler_key(base, profile, css) != key:
+            return None
+        value = json.loads(path.read_text())
+        if not isinstance(value, dict) or value.get('identity') != key:
+            return None
+        plan = value['plan']
+        if not isinstance(plan, dict) or plan.get('syntax_checked') is not False or not plan.get('_output_sha256'):
+            return None
+        digest = sha(json.dumps(plan, sort_keys=True).encode())
+        if digest != record.get('plan_cache_digest'):
+            return None
+        build(base, {**profile, '_plan': plan})
+        return {**plan, '_cache_digest': digest}
+    except (OSError, ValueError, KeyError, TypeError, IndexError):
+        return None
+
+
+def compile_plan(base, profile, css, state, record):
+    plan = cached_plan(base, profile, css, state, record)
+    if plan is not None:
+        return plan
+    plan = compatible_plan(base, profile, css)
+    if state is None or not plan.get('syntax_checked'):
+        return plan
+    output = build(base, {**profile, '_plan': plan})
+    fast = {**plan, 'syntax_checked': False, '_output_sha256': sha(output)}
+    directory = state / 'plans'
+    if directory.is_symlink():
+        return fast
+    try:
+        key = compiler_key(base, profile, css)
+        fast['_cache_id'] = key
+        digest = sha(json.dumps(fast, sort_keys=True).encode())
+        save_json(directory / (key + '.json'), {'identity': key, 'plan': fast})
+        fast['_cache_digest'] = digest
+    except OSError:
+        fast.pop('_cache_id', None)
+    return fast
 
 
 def find_client(ui, rules, state=None):
@@ -231,7 +300,7 @@ def find_client(ui, rules, state=None):
             if record and record['patched_sha256'] == sha(data):
                 base = check_backup(state, record).read_bytes()
             try:
-                plan = compatible_plan(base, profile, css_data)
+                plan = compile_plan(base, profile, css_data, state, record)
             except (Unsupported, UnicodeError):
                 continue
             selected = {**profile, '_plan': plan, '_base': base, '_css': css_data}
@@ -288,6 +357,9 @@ def install_patch(ui, state, rules, seed=None):
               "patched_sha256": sha(patched), "bytes": len(original), "version": VERSION,
               "tested_client": profile["tested_client"], 'active': profile['_plan']['active'],
               'paused': profile['_plan']['paused']}
+    if profile['_plan'].get('_cache_id'):
+        record['plan_cache'] = profile['_plan']['_cache_id']
+        record['plan_cache_digest'] = profile['_plan']['_cache_digest']
     pending = state / 'pending.json'
     if data != patched:
         if 'navigation' in profile['_plan']['active']:

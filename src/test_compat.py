@@ -24,6 +24,11 @@ class SyntaxTests(unittest.TestCase):
         b = self.canonical('f(input) { /* comment */ let result=input+1; return result; }')
         self.assertEqual(a, b)
 
+    def test_dependencies_exclude_parameters_locals_and_property_names(self):
+        text = 'f(input){const local=1;return dependency.read(input)+object[computed]+local}'
+        result = compat.run_syntax([text])['results'][0]
+        self.assertEqual(result['identifiers'], ['computed', 'dependency', 'object'])
+
     def test_automatic_semicolon_and_shadowing_are_preserved(self):
         self.assertNotEqual(self.canonical('f(){return\n1}'), self.canonical('f(){return 1}'))
         self.assertNotEqual(self.canonical('f(a){return new Set(a)}'), self.canonical('f(Set){return new Set()}'))
@@ -231,6 +236,36 @@ class ClientTests(unittest.TestCase):
         (ui / 'sp.js').write_bytes(self.original)
         (ui / 'css/sp.css').write_bytes(self.css)
         return ui, state
+
+    def test_local_only_update_installs_without_requiring_an_old_patch_backup(self):
+        source = (self.fixture.parent / 'chunk.original.js').read_bytes()
+        source = source.replace(b'UpdateAppOverview(e){', b'UpdateAppOverview(e){this.futureWakeStep();', 1)
+        source = source.replace(b'UpdateApps(e,t){const r=new Set(this.m_setApps);',
+                                b'UpdateApps(e,t){this.futureCollectionStep();const r=new Set(this.m_setApps);', 1)
+        source = source.replace(b'async InitAfterLogin(){',
+                                b'async InitAfterLogin(){this.futureLoginStep();const futureSpace="' + b'\\u6e38' * 100 +
+                                b'"+"' + b'\\u6e38' * 100 + b'";', 1)
+        with tempfile.TemporaryDirectory(prefix='.compat-test-', dir=HERE) as name:
+            ui, state = Path(name) / 'ui', Path(name) / 'state'
+            ui.mkdir()
+            (ui / 'library.js').write_text('fixture')
+            target = ui / 'chunk~fixture.js'
+            target.write_bytes(source)
+            result = engine.execute('apply', ui, state, RULES)
+            self.assertEqual(result['status'], 'partial', result)
+            self.assertEqual(set(result['active']), {'startup', 'collections'})
+            output = target.read_bytes()
+            self.assertEqual(len(output), len(source))
+            for call in [b'futureWakeStep()', b'futureCollectionStep()', b'futureLoginStep()']:
+                self.assertIn(call, output)
+            with patch.object(engine, 'compatible_plan', side_effect=AssertionError('Cache was not reused')):
+                self.assertEqual(engine.execute('status', ui, state, RULES)['status'], 'partial')
+            receipt = engine.read_receipt(state, target.name)
+            cache = state / 'plans' / (receipt['plan_cache'] + '.json')
+            cache.write_text('{broken')
+            self.assertEqual(engine.execute('apply', ui, state, RULES)['status'], 'partial')
+            self.assertEqual(engine.execute('restore', ui, state, RULES)['status'], 'restored')
+            self.assertEqual(target.read_bytes(), source)
 
     def test_partial_apply_recovers_full_and_new_update_uninstalls_to_new_original(self):
         with tempfile.TemporaryDirectory(prefix='.compat-test-', dir=HERE) as name:

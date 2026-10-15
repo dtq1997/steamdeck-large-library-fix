@@ -17,46 +17,30 @@ function envelope(text) {
   throw Error('Unsupported syntax context');
 }
 
-function identifier(index) {
-  const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_';
-  let result = alphabet[index % alphabet.length];
-  for (index = Math.floor(index / alphabet.length); index; index = Math.floor(index / alphabet.length)) {
-    result += alphabet[index % alphabet.length];
-  }
-  return result;
-}
-
-function canonical(text) {
+function canonicalInfo(text) {
   const form = envelope(text);
-  const output = Terser.minify_sync(form.input, {
+  const result = Terser.minify_sync(form.input, {
     compress: false, keep_fnames: true, keep_classnames: true,
     mangle: {toplevel: false, nth_identifier: {get: identifier}},
-    format: {ascii_only: true, comments: false, semicolons: true},
-  }).code;
+    format: {ascii_only: true, comments: false, semicolons: true, ast: true},
+  });
+  const output = result.code;
+  result.ast.figure_out_scope();
+  const identifiers = [...result.ast.globals.keys()].sort();
   const tree = acorn.parse(output, {ecmaVersion: 'latest'});
   if (form.kind === 'class') {
     const body = tree.body[0].body;
-    return output.slice(body.start + 1, body.end - 1) + form.suffix;
+    return {canonical: output.slice(body.start + 1, body.end - 1) + form.suffix, identifiers};
   }
   if (form.kind === 'object') {
     const object = tree.body[0].expression;
-    return output.slice(object.start + 1, object.end - 1) + form.suffix;
+    return {canonical: output.slice(object.start + 1, object.end - 1) + form.suffix, identifiers};
   }
-  return output + form.suffix;
+  return {canonical: output + form.suffix, identifiers};
 }
 
-function identifiers(tree) {
-  const names = new Set();
-  function visit(node) {
-    if (!node || typeof node !== 'object') return;
-    if (node.type === 'Identifier') names.add(node.name);
-    for (const value of Object.values(node)) {
-      if (Array.isArray(value)) value.forEach(visit);
-      else if (value && typeof value === 'object') visit(value);
-    }
-  }
-  visit(tree);
-  return [...names].sort();
+function canonical(text) {
+  return canonicalInfo(text).canonical;
 }
 
 function scopedHeader(request) {
@@ -75,7 +59,8 @@ function scopedHeader(request) {
     for (const name of [...wanted]) {
       const node = bindings.get(name);
       if (!node) continue;
-      for (const dependency of identifiers(node.init)) {
+      const dependencies = node.init ? canonicalInfo('(' + raw.slice(node.init.start, node.init.end) + ')').identifiers : [];
+      for (const dependency of dependencies) {
         if (bindings.has(dependency) && !wanted.has(dependency)) { wanted.add(dependency); changed = true; }
       }
     }
@@ -133,14 +118,16 @@ function byteLength(text) {
 const request = JSON.parse(std.in.readAsString());
 const results = request.texts.map(text => {
   try {
+    if (typeof text === 'object' && text.factory_header) return scopedFactoryHeader(text);
+    if (typeof text === 'object' && text.model_context) return modelContract(text.model_context, text.outer_bindings || [], text.wake || false);
+    if (typeof text === 'object' && text.local_unit) return localTransform(text.local_unit);
     if (typeof text === 'object' && text.literal_pair) {
       const values = text.literal_pair.map(value => acorn.parseExpressionAt(value, 0, {ecmaVersion: 'latest'}));
       return {equal: values.every((node, i) => node.type === 'Literal' && typeof node.value === 'string' &&
         node.end === text.literal_pair[i].length) && values[0].value === values[1].value};
     }
     if (typeof text === 'object') return scopedHeader(text);
-    const form = envelope(text);
-    return {canonical: canonical(text), identifiers: identifiers(acorn.parse(form.input, {ecmaVersion: 'latest'}))};
+    return canonicalInfo(text);
   }
   catch (error) { return {error: String(error)}; }
 });

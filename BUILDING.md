@@ -7,7 +7,7 @@ python3 src/build_release.py --output dist
 (cd src && python3 -m unittest test_packaging -q)
 ```
 
-The build produces the offline `.desktop` installer, an allowlisted source ZIP, documentation, and SHA-256 checksums. Version 0.4.14 includes its own bounded JavaScript syntax checker; users do not need Node.js. Third-party versions, digests, and licenses are in src/vendor.json and src/THIRD-PARTY-NOTICES.txt.
+The build produces the offline `.desktop` installer, an allowlisted source ZIP, documentation, and SHA-256 checksums. Version 0.4.15 includes its own bounded JavaScript syntax checker; users do not need Node.js. Third-party versions, digests, and licenses are in src/vendor.json and src/THIRD-PARTY-NOTICES.txt.
 
 The README inside `src/` is part of the immutable installation payload. Public documentation is maintained in the two README files at the repository root. Change the version before modifying an installation payload that has already been released.
 

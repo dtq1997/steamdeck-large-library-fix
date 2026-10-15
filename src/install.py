@@ -13,7 +13,7 @@ MARKER = "# Managed by steam-large-library-fix\n"
 PAYLOAD = ("engine.py", "rules.json", "install.py", "status.py", "manager.py", "README.md", "LICENSE",
            'compat.py', 'compatibility.json', 'syntax.js', 'acorn.js', 'terser.js',
            'qjs-linux-x86_64', 'vendor.json', 'THIRD-PARTY-NOTICES.txt')
-PAYLOAD += ('native_syntax.py', 'libsyntax-linux-x86_64.so')
+PAYLOAD += ('native_syntax.py', 'libsyntax-linux-x86_64.so', 'local.js', 'model.js')
 
 
 def systemctl(*args):

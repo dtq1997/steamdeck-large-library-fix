@@ -69,11 +69,23 @@ def scope_header(source, start, end, bindings):
     return HEADERS[key]
 
 
+def model_digest(source, profile):
+    wake_index = group_definitions('target' in profile)[0]['methods'][0]
+    wake_start = exact_fragment(source, profile['methods'][wake_index])[0]
+    offset = compat.byte_offsets(source, [wake_start])[wake_start]
+    unit = compat.run_native(source, [], [], [offset])['units'][0]
+    context = source.encode()[unit['context_start']:unit['context_end']].decode()
+    model = compat.run_syntax([{'model_context': context, 'outer_bindings': unit['outer_bindings'], 'wake': True}])['results'][0]
+    if 'model' not in model:
+        raise ValueError('Wake model projection failed: ' + str(model))
+    return compat.digest(model['model'])
+
+
 def profile_metadata(source, profile, css):
     patched = engine.build(source.encode(), profile).decode()
     result = {'methods': [], 'contracts': [], 'groups': group_definitions('target' in profile),
               'known': {'original': compat.digest(source), 'patched': compat.digest(patched)},
-              'ranges': {'original': [], 'patched': []}}
+              'ranges': {'original': [], 'patched': []}, 'wake_model': model_digest(source, profile)}
     result['groups'][0]['contracts'] = profile.get('wake_contracts', [])
     if css is not None:
         result['css_digest'] = compat.css_digest(css)
