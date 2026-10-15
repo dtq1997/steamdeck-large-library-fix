@@ -4,12 +4,12 @@
 
 An offline, reversible SteamOS library UI patch for large Steam libraries.
 
-**0.4.15 预览版**：改进更新后的兼容检查、分组启停与恢复；当前已适配客户端保留 0.4.13 的全部性能优化。这是第三方工具，与 Valve 无关；目前完成了一台大库 Steam Deck 的有限实测，适合愿意保留回退的用户试用。
+**0.4.16 预览版**：改进更新后的兼容检查、分组启停与恢复；当前已适配客户端保留 0.4.13 的全部性能优化。这是第三方工具，与 Valve 无关；目前完成了一台大库 Steam Deck 的有限实测，适合愿意保留回退的用户试用。
 
 ## 下载和安装
 
 1. 在 Steam Deck 上退出游戏，切换到**桌面模式**。
-2. 从 GitHub 的 **Releases** 下载 `SteamDeck-LargeLibraryFix-0.4.15.desktop`。也可以在电脑下载后，把这一个文件传到 Deck 桌面。
+2. 从 GitHub 的 **Releases** 下载 `SteamDeck-LargeLibraryFix-0.4.16.desktop`。也可以在电脑下载后，把这一个文件传到 Deck 桌面。
 3. 打开这个文件。首次若出现系统安全确认，选择“信任并启动”或相应的执行选项。若系统只把它当成文本打开，右键文件 → 属性 → 权限，允许作为程序执行，再打开。
 4. 看到“已安装”后，方便时正常重开 Steam，或重启 Deck，使补丁加载。
 
@@ -74,6 +74,7 @@ An offline, reversible SteamOS library UI patch for large Steam libraries.
 打开桌面的 **Steam 大库优化**，选择：
 
 - **查看状态**：检查磁盘上的当前 Steam 文件是否含兼容补丁。它不能证明尚未重开的界面已经加载。
+- **检查更新**：查找 GitHub 新版，确认并校验下载后安装，保留原始备份；下载失败不会改动当前安装。
 - **安装 / 修复此版本**：应用当前安装器所带的版本，不会联网获取新版本。
 - **卸载并恢复**：移除自动检查，恢复仍与本工具修改记录一致的原文件。然后正常重开 Steam。
 
@@ -82,14 +83,14 @@ An offline, reversible SteamOS library UI patch for large Steam libraries.
 若桌面入口丢失，可重新打开同版本单文件安装器，恢复入口。命令行备用入口仅供排错：
 
 ```sh
-python3 ~/.local/share/steam-large-library-fix/versions/0.4.15/install.py --uninstall
+python3 ~/.local/share/steam-large-library-fix/versions/0.4.16/install.py --uninstall
 ```
 
 ## 数据与排错
 
 安装代码保存在 `~/.local/share/steam-large-library-fix/versions/`；原始备份、状态和本地安装日志保存在 `~/.local/state/steam-large-library-fix/`。临时解包目录会在安装器退出后清理。
 
-工具不读取 Steam 密码、Cookie 或 API key，不上传日志，不收集账号资料，不连接外部服务器。备份会包含这台设备原有的 Steam UI 程序，请不要把整个状态目录上传到 GitHub。
+工具不读取 Steam 密码、Cookie 或 API key，不上传日志，不收集账号资料。仅点击“检查更新”时连接 GitHub 下载发布版本。备份会包含这台设备原有的 Steam UI 程序，请不要把整个状态目录上传到 GitHub。
 
 遇到问题请记录 Steam 客户端版本、操作步骤、是否能重开 Steam 恢复，以及桌面状态提示。不要提供账号密码或完整私人目录。
 

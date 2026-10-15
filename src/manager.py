@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native desktop installation and removal, with no network or client restart."""
+"""Native desktop installation, removal and user-initiated updates."""
 import argparse
 import contextlib
 import fcntl
@@ -9,10 +9,12 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import traceback
 from pathlib import Path
 
 import engine
+import updater
 
 HERE = Path(__file__).resolve().parent
 HOME = Path.home()
@@ -136,17 +138,48 @@ def uninstall_now():
                             '已卸载。方便时正常重开 Steam。原始备份已保留。'))
 
 
+def update_now():
+    with progress(text('Checking GitHub for updates…', '正在检查 GitHub 更新…')):
+        release = updater.check(engine.VERSION)
+    if release is None:
+        dialog('--msgbox', text('Already up to date: ', '已是最新版本：') + engine.VERSION)
+        return
+    answer = dialog('--yesno', text(
+        'Update to {version}? The download will be checked before installation.\n'
+        'Steam will stay open and original backups will be kept.',
+        '更新到 {version}？下载校验通过后才会安装。\n'
+        '不会关闭 Steam，原始备份会保留。').format(version=release['tag_name']),
+        '--yes-label', text('Update', '更新'), '--no-label', text('Cancel', '取消'))
+    if answer.returncode:
+        return
+    cache = HOME / '.cache/steam-large-library-fix'
+    cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if cache.is_symlink():
+        raise ValueError('Installer cache must not be a symbolic link')
+    with tempfile.TemporaryDirectory(prefix='update-', dir=cache) as directory:
+        with progress(text('Downloading and verifying…', '正在下载并校验…')):
+            command = updater.prepare(release, Path(directory))
+        # The new installer owns its lock. Holding our menu lock here would block it.
+        result = subprocess.run(command)
+        if result.returncode:
+            raise RuntimeError(text('Update did not finish. Check status or retry.',
+                                    '更新未完成，请查看状态或重试。'))
+
+
 def manage():
     choices = [
         'install', text('Install / repair this version', '安装 / 修复此版本'),
         'status', text('Check status', '查看状态'),
+        'update', text('Check for updates', '检查更新'),
         'uninstall', text('Uninstall and restore', '卸载并恢复'),
         'readme', text('Read instructions', '查看说明'),
     ]
-    r = dialog('--menu', text('Choose an action. No online update check is performed.',
-                              '选择操作。本工具不会联网检查更新。'), *choices)
+    r = dialog('--menu', text('Choose an action. Updates are checked only when requested.',
+                              '选择操作。只有点击“检查更新”时才会联网查找新版。'), *choices)
     actions = {'install': install_now, 'status': show_status, 'uninstall': uninstall_now,
                'readme': lambda: dialog('--textbox', str(HERE / 'README.md'), '760', '560')}
+    if r.returncode == 0 and r.stdout.strip() == 'update':
+        return 'update'
     if r.returncode == 0 and r.stdout.strip() in actions:
         actions[r.stdout.strip()]()
 
@@ -158,6 +191,7 @@ def main():
     try:
         check_environment()
         STATE.mkdir(parents=True, exist_ok=True)
+        action = None
         with (STATE / 'installer.lock').open('a') as lock:
             try:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -167,7 +201,9 @@ def main():
             if args.install:
                 install_now()
             else:
-                manage()
+                action = manage()
+        if action == 'update':
+            update_now()
     except Exception as error:
         details = traceback.format_exc()
         try:
