@@ -30,14 +30,22 @@ class PackagingTests(unittest.TestCase):
         line = next(x for x in content.splitlines() if x.startswith('Exec='))
         argv = shlex.split(line[5:])
         self.assertEqual(argv[:2], ['/usr/bin/python3', '-c'])
-        self.assertEqual(len(argv), 3)
+        self.assertEqual(len(argv), 4)
+        self.assertEqual(argv[3], '%k')
+        self.assertLess(len(argv[2]), 100000)
         self.assertNotIn('%', argv[2])
         namespace = {'__name__': 'test_embedded'}
         exec(compile(argv[2], '<desktop>', 'exec'), namespace)
-        namespace['unpack'](namespace['PAYLOAD'], self.root)
-        self.assertEqual({p.name for p in self.root.iterdir()}, set(install.PAYLOAD))
+        launcher = self.root / '安装器 with spaces.desktop'
+        launcher.write_text(content)
+        extracted = self.root / 'extracted'
+        extracted.mkdir()
+        namespace['unpack'](namespace['read_payload'](str(launcher)), extracted)
+        self.assertEqual({p.name for p in extracted.iterdir()}, set(install.PAYLOAD))
         for name in install.PAYLOAD:
-            self.assertEqual((self.root / name).read_bytes(), (build_release.HERE / name).read_bytes())
+            self.assertEqual((extracted / name).read_bytes(), (build_release.HERE / name).read_bytes())
+        self.assertTrue((extracted / 'qjs-linux-x86_64').stat().st_mode & 0o100)
+        self.assertEqual(namespace['read_payload'](launcher.as_uri()), build_release.encoded_payload())
 
     def test_corrupted_file_rejected_before_any_write(self):
         bundle = json.loads(zlib.decompress(base64.b64decode(build_release.encoded_payload())))
@@ -68,7 +76,7 @@ class PackagingTests(unittest.TestCase):
                              set(build_release.ARCHIVE_FILES))
             for name in build_release.ARCHIVE_FILES:
                 self.assertEqual(source.read(prefix + name), (build_release.ROOT / name).read_bytes())
-            self.assertFalse(any(n.endswith('.js') or 'notes/' in n for n in source.namelist()))
+            self.assertFalse(any('notes/' in n or n.endswith('/sp.js') or n.endswith('/chunk.original.js') for n in source.namelist()))
         for name in build_release.DOCUMENTS:
             self.assertEqual((first / name).read_bytes(), (build_release.ROOT / name).read_bytes())
 

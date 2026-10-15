@@ -1,5 +1,5 @@
 {
-  "version": "0.4.13",
+  "version": "0.4.14",
   "tested_client": "1788652215",
   "methods": [
     {
@@ -32,6 +32,16 @@
     },
     {
       "literal": "ToStorageFormat(){return(0,o.HO)(this.m_filterSpec)}"
+    },
+    {
+      "start": "class E",
+      "end": "(0,i.Cg)([f.oI],E.prototype,\"BHasStoreTag\",null);class ",
+      "sha256": "c6087401028c676034772b5bd283100e13cac2111afd72784c9c6efcb4b6f186"
+    },
+    {
+      "start": "O={",
+      "end": ";function L(e,t){return k(e,void 0===t?M.TS.LANGUAGE:(0",
+      "sha256": "45ffe17f91e4a1cc880727031205aca1d46c84586a97464c59916558d23bb1b2"
     }
   ],
   "alternates": [
@@ -236,8 +246,26 @@
           "start": "function Ue(Ke){",
           "end": "function Re(Ke){",
           "sha256": "5b6fe4a7e4613ad5a0b3508dd07f859b22bb98dfc7d4763d1301db8738e41adb"
+        },
+        {
+          "start": "class J",
+          "end": "A([j.oI],J.prototype,\"BHasStoreTag\",1);class G extends ",
+          "sha256": "4311d9f0b23cedd017997717c8535caf3168af4a7a7f00cf157bf9d6e40cd20c"
+        },
+        {
+          "start": "H={",
+          "end": ";function Y(se,V){const ee=V===void 0?P.TS.LANGUAGE:(0,",
+          "sha256": "d71b0cd319693d7ded8dd966734c1dea753da1d3ba660c30d6d0756f955f2f53"
         }
+      ],
+      "wake_contracts": [
+        22,
+        23
       ]
     }
+  ],
+  "wake_contracts": [
+    2,
+    3
   ]
 }

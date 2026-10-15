@@ -79,11 +79,27 @@ def progress(message):
 def install_now():
     with progress(text('Checking compatibility and installing…', '正在检查兼容性并安装…')):
         run_installer()
-    dialog('--msgbox', text(
+    message = text(
         'Installed. Restart Steam normally, or restart your Deck, when convenient.\n\n'
         'Steam and running games were not closed. Use “Steam Library Fix” on the desktop to check status or uninstall.',
         '已安装。方便时正常重开 Steam，或重启 Deck，即可加载补丁。\n\n'
-        '安装器没有关闭 Steam 或游戏。桌面“Steam 大库优化”可查看状态和卸载。'))
+        '安装器没有关闭 Steam 或游戏。桌面“Steam 大库优化”可查看状态和卸载。')
+    status = json.loads((STATE / 'status.json').read_text())
+    dialog('--msgbox', message + group_details(status))
+
+
+def group_details(result):
+    labels = {'wake': text('Wake data sync', '唤醒资料同步'),
+              'startup': text('Startup wait', '启动等待'),
+              'library': text('Library browsing', '游戏库浏览'),
+              'navigation': text('Navigation and scrolling', '导航与滚动')}
+    parts = []
+    if result.get('active'):
+        parts.append(text('Active: ', '已生效：') + ', '.join(labels.get(k, k) for k in result['active']))
+    if result.get('paused'):
+        parts.append(text('Paused after related Steam changes: ', '因相关 Steam 代码变化而暂停：') +
+                     ', '.join(labels.get(k, k) for k in result['paused']))
+    return '\n\n' + '\n'.join(parts) if parts else ''
 
 
 def show_status():
@@ -95,11 +111,15 @@ def show_status():
                         '当前 Steam 文件已打上补丁。\n刚安装时，需正常重开 Steam 才会加载。'),
         'needs_apply': text('Compatible Steam files found; the patch is not currently applied.\nChoose install/repair, or restart Steam normally.',
                             '当前 Steam 文件兼容，但尚未打补丁。\n可选择安装/修复，或正常重开 Steam。'),
+        'partial': text('Some optimization groups are active. Changed or unsupported groups are paused.\nRestart Steam normally after installation.',
+                        '部分优化已生效，相关代码变化的项目已暂停。\n安装后需正常重开 Steam 才会加载。'),
+        'busy': text('A compatibility check or repair is already running. Please check again shortly.',
+                     '兼容检查或修复正在进行，请稍后再查看状态。'),
     }
     message = messages.get(result['status'], text(
         'This Steam build or another modification is not recognized. No patch was forced.\nAn updated compatible release is needed.',
         '当前 Steam 版本或其他改动尚未识别，没有强行打补丁。\n需要适配当前客户端的新版本。'))
-    dialog('--msgbox', message + '\n\n' + text('Tool version: ', '工具版本：') + engine.VERSION)
+    dialog('--msgbox', message + group_details(result) + '\n\n' + text('Tool version: ', '工具版本：') + engine.VERSION)
 
 
 def uninstall_now():

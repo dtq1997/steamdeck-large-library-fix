@@ -12,7 +12,8 @@ import engine
 from install import PAYLOAD
 
 HERE = Path(__file__).resolve().parent
-SOURCES = (*PAYLOAD, 'bootstrap.py', 'build_release.py', 'install.sh', 'test_packaging.py')
+SOURCES = (*PAYLOAD, 'bootstrap.py', 'build_release.py', 'install.sh', 'test_packaging.py',
+           'generate_compat.py', 'test_compat.py', 'build_native.py')
 ROOT = HERE.parent
 DOCUMENTS = ('README.md', 'README.zh-CN.md', 'LICENSE')
 ARCHIVE_FILES = (*DOCUMENTS, 'BUILDING.md', '.gitignore',
@@ -28,8 +29,6 @@ def encoded_payload():
 
 def desktop_source():
     bootstrap = (HERE / 'bootstrap.py').read_text()
-    assert bootstrap.count('__LLF_PAYLOAD__') == 1
-    bootstrap = bootstrap.replace('__LLF_PAYLOAD__', encoded_payload())
     code = base64.b64encode(zlib.compress(bootstrap.encode(), 9)).decode('ascii')
     command = "import base64,zlib;exec(zlib.decompress(base64.b64decode('" + code + "')))"
     assert len(command) < 100000 and not any(c in command for c in '%$`\\\"')
@@ -41,11 +40,12 @@ Name=Install Steam Library Fix
 Name[zh_CN]=安装 Steam 大库优化
 Comment=Offline installer {engine.VERSION}; no administrator password required
 Comment[zh_CN]=离线安装器 {engine.VERSION}，无需管理员密码
-Exec=/usr/bin/python3 -c "{command}"
+Exec=/usr/bin/python3 -c "{command}" %k
 Icon=steam
 Terminal=false
 Categories=Utility;
 StartupNotify=false
+X-LLF-Payload={encoded_payload()}
 '''
 
 
@@ -60,7 +60,7 @@ def build(destination):
         for name in sorted(ARCHIVE_FILES):
             info = zipfile.ZipInfo(stem + '/' + name, (2026, 1, 1, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
-            info.external_attr = (0o100755 if name.endswith('.sh') else 0o100644) << 16
+            info.external_attr = (0o100755 if name.endswith('.sh') or name.endswith('qjs-linux-x86_64') else 0o100644) << 16
             output.writestr(info, (ROOT / name).read_bytes())
     for name in DOCUMENTS:
         (destination / name).write_bytes((ROOT / name).read_bytes())

@@ -8,10 +8,12 @@ home = Path.home()
 rules = json.loads((Path(__file__).resolve().parent / "rules.json").read_text())
 result = engine.execute("status", (home / ".local/share/Steam/steamui").resolve(),
                         home / ".local/state/steam-large-library-fix", rules, reason="status")
-if result["status"] == "applied":
+if result["status"] in {'applied', 'partial'}:
     print("当前 Steam 文件中的大库修复：已安装。\n")
     print("正常重启时会检查，兼容代码被更新覆盖后会重新应用。")
     print("安装或更新后，运行中的旧界面需要正常重开 Steam 才能确认加载。")
+    if result.get('paused'):
+        print('部分项目因相关代码变化暂停：' + ', '.join(result['paused']))
 elif result["status"] == "needs_apply":
     print("当前 Steam 文件可兼容，但修复尚未应用。正常重开 Steam 会再次检查。")
     print("若 Steam 正在更新，请先等待更新完成。")

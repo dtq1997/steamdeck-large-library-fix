@@ -4,12 +4,12 @@
 
 An offline, reversible SteamOS library UI patch for large Steam libraries.
 
-**0.4.13 预览版**：单文件安装器。性能补丁与已经在实机验证的 0.4.12 相同。这是第三方工具，与 Valve 无关；目前完成了一台大库 Steam Deck 的有限实测，适合愿意保留回退的用户试用。
+**0.4.14 预览版**：改进更新后的兼容检查、分组启停与恢复；当前已适配客户端保留 0.4.13 的全部性能优化。这是第三方工具，与 Valve 无关；目前完成了一台大库 Steam Deck 的有限实测，适合愿意保留回退的用户试用。
 
 ## 下载和安装
 
 1. 在 Steam Deck 上退出游戏，切换到**桌面模式**。
-2. 从 GitHub 的 **Releases** 下载 `SteamDeck-LargeLibraryFix-0.4.13.desktop`。也可以在电脑下载后，把这一个文件传到 Deck 桌面。
+2. 从 GitHub 的 **Releases** 下载 `SteamDeck-LargeLibraryFix-0.4.14.desktop`。也可以在电脑下载后，把这一个文件传到 Deck 桌面。
 3. 打开这个文件。首次若出现系统安全确认，选择“信任并启动”或相应的执行选项。若系统只把它当成文本打开，右键文件 → 属性 → 权限，允许作为程序执行，再打开。
 4. 看到“已安装”后，方便时正常重开 Steam，或重启 Deck，使补丁加载。
 
@@ -82,7 +82,7 @@ An offline, reversible SteamOS library UI patch for large Steam libraries.
 若桌面入口丢失，可重新打开同版本单文件安装器，恢复入口。命令行备用入口仅供排错：
 
 ```sh
-python3 ~/.local/share/steam-large-library-fix/versions/0.4.13/install.py --uninstall
+python3 ~/.local/share/steam-large-library-fix/versions/0.4.14/install.py --uninstall
 ```
 
 ## 数据与排错
@@ -98,7 +98,7 @@ python3 ~/.local/share/steam-large-library-fix/versions/0.4.13/install.py --unin
 `-source.zip` 提供安装器源码及许可。解压后可构建相同的离线安装文件：
 
 ```sh
-python3 build_release.py --output ./dist
+python3 src/build_release.py --output ./dist
 ```
 
 `SHA256SUMS` 列出安装文件和源码包的校验值。安装器内部也检查所带文件的完整性；这用于发现损坏，不能替代从可信发布页下载。

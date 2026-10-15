@@ -1,0 +1,42 @@
+[
+  {
+    "file": "acorn.js",
+    "package": "acorn",
+    "version": "8.19.0",
+    "sha256": "b95392d79457d0357555c5ed3e56302d074b92dff119bcf3b44179500b10e9df"
+  },
+  {
+    "file": "terser.js",
+    "package": "terser",
+    "version": "5.44.1",
+    "sha256": "9a56763b35425aa5fbb9e66c75960b931089a3380a93507a5c7619ff55703989"
+  },
+  {
+    "file": "qjs-linux-x86_64",
+    "package": "QuickJS-ng",
+    "version": "0.17.0",
+    "url": "https://github.com/quickjs-ng/quickjs/releases/download/v0.17.0/qjs-linux-x86_64",
+    "sha256": "0bfc02511a9f549c28b53880d988fc7cd5d361e90c5e8afdfcd7dc6774ceace5"
+  },
+  {
+    "file": "libsyntax-linux-x86_64.so",
+    "package": "Tree-sitter and JavaScript grammar",
+    "version": "0.25.2 / 0.25.0",
+    "sha256": "f2ab52dcd0f0c8999953325dcc5eed28cad8fe6c34108f922e8dbbebefe9089e",
+    "sources": [
+      {
+        "name": "tree-sitter.tar.gz",
+        "url": "https://github.com/tree-sitter/tree-sitter/archive/refs/tags/v0.25.2.tar.gz",
+        "sha256": "26791f69182192fef179cd58501c3226011158823557a86fe42682cb4a138523",
+        "bytes": 855826
+      },
+      {
+        "name": "javascript.tar.gz",
+        "url": "https://github.com/tree-sitter/tree-sitter-javascript/archive/refs/tags/v0.25.0.tar.gz",
+        "sha256": "9712fc283d3dc01d996d20b6392143445d05867a7aad76fdd723824468428b86",
+        "bytes": 309805
+      }
+    ],
+    "compiler": "Zig 0.17.0; x86_64-linux-gnu.2.17; O2; NDEBUG"
+  }
+]
