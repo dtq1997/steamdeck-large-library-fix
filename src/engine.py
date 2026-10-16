@@ -14,7 +14,7 @@ from pathlib import Path
 
 import compat
 
-VERSION = "0.4.18"
+VERSION = "0.4.19"
 HERE = Path(__file__).resolve().parent
 
 

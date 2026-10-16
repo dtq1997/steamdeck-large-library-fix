@@ -115,8 +115,8 @@ class StructuralTests(unittest.TestCase):
 let observations=[],disconnects=0,callback,hide,active=true,fail=false;
 const classes=new Set(),child={},root={children:[child]};
 const selector=':root:has(.Root > div[data-accent-color="blue"]) .Button';
-const rule={selectorText:selector};
-const doc={styleSheets:[{cssRules:[rule]}],querySelectorAll:s=>s==='.Root'?[root]:[],
+const rule={selectorText:selector,cssRules:[]};
+const doc={styleSheets:[{cssRules:[{cssRules:[rule]}]}],querySelectorAll:s=>s==='.Root'?[root]:[],
  documentElement:{matches:s=>active,classList:{toggle:(k,on)=>on?classes.add(k):classes.delete(k),remove:k=>classes.delete(k)}},
  defaultView:{MutationObserver:class{constructor(fn){callback=fn}disconnect(){disconnects++;observations=[]}
  observe(node,options){observations.push([node===root?'root':node===child?'child':'unknown',options]);if(fail)throw Error('observe failure')}},

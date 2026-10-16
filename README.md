@@ -7,7 +7,7 @@ If you have a very large Steam library, logging in, waking your Steam Deck, or b
 ## Download and install
 
 1. Exit your games and switch your Steam Deck to **Desktop Mode**.
-2. Download `SteamDeck-LargeLibraryFix-0.4.18.desktop` from **[Releases](https://github.com/dtq1997/steamdeck-large-library-fix/releases)** on GitHub. You can also download it on another computer and copy the file to your Deck's desktop.
+2. Download `SteamDeck-LargeLibraryFix-0.4.19.desktop` from **[Releases](https://github.com/dtq1997/steamdeck-large-library-fix/releases)** on GitHub. You can also download it on another computer and copy the file to your Deck's desktop.
 3. Open the file. If a security prompt appears, choose **Trust and Launch**, **Continue**, or the equivalent run option. If it opens as text, right-click it → Properties → Permissions, allow it to run as a program, then open it again.
 4. Once **Installed** appears, restart Steam normally—or restart your Deck—when convenient to load the patch.
 

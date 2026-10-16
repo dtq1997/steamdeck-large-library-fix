@@ -12,7 +12,7 @@ function themeDocument(doc) {
       const pending = [...rules];
       while (pending.length) {
         const rule = pending.pop();
-        if (rule.cssRules) { pending.push(...rule.cssRules); continue; }
+        if (rule.cssRules) pending.push(...rule.cssRules);
         if (!rule.selectorText) continue;
         const original = rule.selectorText;
         const replacement = original.replace(pattern, (selector, root) => {
