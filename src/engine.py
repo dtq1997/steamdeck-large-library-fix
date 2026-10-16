@@ -14,7 +14,7 @@ from pathlib import Path
 
 import compat
 
-VERSION = "0.4.17"
+VERSION = "0.4.18"
 HERE = Path(__file__).resolve().parent
 
 
@@ -192,13 +192,14 @@ def build(data, rules):
             delta += len(replacement.encode()) - len(source[start:end].encode())
             if delta <= 0:
                 break
-    previous = len(source) + 1
-    for start, end, replacement in sorted(changes, reverse=True):
-        if not (0 <= start < end <= len(source)) or end > previous:
+    previous, pieces = 0, []
+    for start, end, replacement in sorted(changes):
+        if not (0 <= start < end <= len(source)) or start < previous:
             raise Unsupported('Overlapping or invalid patch ranges')
-        source = source[:start] + replacement + source[end:]
-        previous = start
-    output = source.encode('utf-8')
+        pieces.extend((source[previous:start], replacement))
+        previous = end
+    pieces.append(source[previous:])
+    output = ''.join(pieces).encode('utf-8')
     spare = len(data) - len(output)
     if spare < 0:
         raise Unsupported('Cannot preserve client file size')

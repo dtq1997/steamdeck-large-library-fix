@@ -141,6 +141,19 @@ class TransactionTests(unittest.TestCase):
             engine.atomic_write(target, self.patched, expected=engine.sha(self.original))
         self.assertEqual(target.read_bytes(), b'new Steam update')
 
+    def test_dense_edits_preserve_original_offsets_unicode_and_adjacent_ranges(self):
+        text = 'const x="😀";\r\n' + 'abcde' * 2000
+        changes = [(index, index + 1, 'Q') for index in range(20, len(text) - 2, 13)]
+        changes.extend([(0, 5, 'CONST'), (5, 6, ' ')])
+        expected = text
+        for start, end, replacement in sorted(changes, reverse=True):
+            expected = expected[:start] + replacement + expected[end:]
+        plan = {'changes': changes, 'syntax_checked': False}
+        self.assertEqual(engine.build(text.encode(), {'_plan': plan}), expected.encode())
+        for invalid in [[(0, 3, 'x'), (2, 4, 'y')], [(-1, 1, '')], [(1, 1, '')], [(0, len(text) + 1, '')]]:
+            with self.subTest(invalid=invalid), self.assertRaises(engine.Unsupported):
+                engine.build(text.encode(), {'_plan': {'changes': invalid}})
+
 
 @unittest.skipUnless(FIXTURES, 'Set LLF_FIXTURE_DIR to private saved client fixtures')
 class ClientTests(unittest.TestCase):

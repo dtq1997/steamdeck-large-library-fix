@@ -7,7 +7,7 @@
 ## 下载和安装
 
 1. 在 Steam Deck 上退出游戏，切换到**桌面模式**。
-2. 从 GitHub 的 **[Releases](https://github.com/dtq1997/steamdeck-large-library-fix/releases)** 下载 `SteamDeck-LargeLibraryFix-0.4.17.desktop`。也可以在电脑下载后，把这个文件拷到 Deck 桌面上。
+2. 从 GitHub 的 **[Releases](https://github.com/dtq1997/steamdeck-large-library-fix/releases)** 下载 `SteamDeck-LargeLibraryFix-0.4.18.desktop`。也可以在电脑下载后，把这个文件拷到 Deck 桌面上。
 3. 打开这个文件。若出现系统安全确认，选择“信任并启动”“继续”或相应的执行选项。若系统只把它当成文本打开，右键文件 → 属性 → 权限，允许作为程序执行，再打开。
 4. 看到“已安装”后，方便时正常重开 Steam，或重启 Deck，使补丁加载。
 
