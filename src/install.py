@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import subprocess
+from contextlib import contextmanager
 from pathlib import Path
 
 import engine
@@ -14,6 +15,7 @@ PAYLOAD = ("engine.py", "rules.json", "install.py", "status.py", "manager.py", "
            'compat.py', 'compatibility.json', 'syntax.js', 'acorn.js', 'terser.js',
            'qjs-linux-x86_64', 'vendor.json', 'THIRD-PARTY-NOTICES.txt')
 PAYLOAD += ('native_syntax.py', 'libsyntax-linux-x86_64.so', 'local.js', 'model.js', 'updater.py')
+PAYLOAD += ('structural.py', 'structural.js', 'operations.js')
 
 
 def systemctl(*args):
@@ -48,7 +50,7 @@ Before=steam-launcher.service
 Type=oneshot
 ExecStartPre=/usr/bin/sleep 1
 ExecStart={command}--reason=file-change
-TimeoutStartSec=35
+TimeoutStartSec=90
 Restart=no
 RestartForceExitStatus=75
 RestartSec=3
@@ -114,6 +116,21 @@ def stage_version(installed):
             shutil.rmtree(staging)
 
 
+@contextmanager
+def pause_maintenance(previous):
+    # A queued old-version checker must not undo the new patch during upgrade.
+    managed = bool(previous.get('control_hashes'))
+    try:
+        if managed:
+            systemctl('stop', 'steam-large-library-fix.path', 'steam-large-library-fix.service')
+        yield
+    except BaseException:
+        if managed:
+            systemctl('daemon-reload')
+            systemctl('start', 'steam-large-library-fix.path')
+        raise
+
+
 def install(home, seed):
     if os.geteuid() == 0:
         raise ValueError("Run as the Steam Deck user, without sudo")
@@ -128,6 +145,15 @@ def install(home, seed):
     preflight(files, previous)
     stage_version(installed)
     rules = json.loads((installed / "rules.json").read_text())
+    with pause_maintenance(previous):
+        result = finish_install(ui, state, rules, seed, files, record_path)
+    print("已安装。待机、正常重启及兼容代码更新后会自动检查。首次安装后请正常重开 Steam。")
+    print("桌面“Steam 大库优化”可查看状态或卸载。未知内部实现不会被强行修改。")
+    if result['status'] == 'partial':
+        print('部分优化因相关代码变化暂停：' + ', '.join(result['paused']))
+
+
+def finish_install(ui, state, rules, seed, files, record_path):
     result = engine.execute("apply", ui.resolve(), state, rules, seed, "install")
     if result["status"] not in {'applied', 'partial'}:
         raise ValueError("Not installed: " + result.get("detail", result["status"]))
@@ -139,10 +165,7 @@ def install(home, seed):
     systemctl("enable", "steam-large-library-fix.service")
     systemctl("enable", "--now", "steam-large-library-fix.path")
     systemctl('restart', 'steam-large-library-fix.path')
-    print("已安装。待机、正常重启及兼容代码更新后会自动检查。首次安装后请正常重开 Steam。")
-    print("桌面“Steam 大库优化”可查看状态或卸载。未知内部实现不会被强行修改。")
-    if result['status'] == 'partial':
-        print('部分优化因相关代码变化暂停：' + ', '.join(result['paused']))
+    return result
 
 
 def uninstall(home):

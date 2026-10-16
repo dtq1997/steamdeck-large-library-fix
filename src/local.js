@@ -1,4 +1,18 @@
 // [Codex] Version-independent local computations; surrounding source is untouched.
+function envelope(text) {
+  let suffix = '', body = text;
+  if (!/^\d+\s*:/.test(body) && body.endsWith('}),')) { suffix = '}),'; body = body.slice(0, -3); }
+  else if (body.endsWith(',')) { suffix = ','; body = body.slice(0, -1); }
+  const forms = [[body, 'program']];
+  if (/^\d+\s*:/.test(body)) forms.unshift(['({' + body + '})', 'object']);
+  forms.push(['class __LLF__{' + body + '}', 'class']);
+  for (const [input, kind] of forms) {
+    try { acorn.parse(input, {ecmaVersion: 'latest'}); return {input, kind, suffix}; }
+    catch (_) { /* Try the other explicitly supported syntax contexts. */ }
+  }
+  throw Error('Unsupported syntax context');
+}
+
 function identifier(index) {
   const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_';
   let result = alphabet[index % alphabet.length];

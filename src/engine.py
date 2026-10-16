@@ -14,7 +14,7 @@ from pathlib import Path
 
 import compat
 
-VERSION = "0.4.16"
+VERSION = "0.4.17"
 HERE = Path(__file__).resolve().parent
 
 
@@ -215,7 +215,7 @@ def build(data, rules):
 
 def compiler_key(base, profile, css):
     files = ['engine.py', 'compat.py', 'native_syntax.py', 'rules.json', 'compatibility.json',
-             'syntax.js', 'local.js', 'model.js', 'acorn.js', 'terser.js',
+             'syntax.js', 'local.js', 'model.js', 'structural.py', 'structural.js', 'operations.js', 'acorn.js', 'terser.js',
              'qjs-linux-x86_64', 'libsyntax-linux-x86_64.so']
     paths = [HERE / name for name in files]
     paths.extend(Path(os.environ[name]) for name in ['LLF_DEVELOPMENT_QJS', 'LLF_DEVELOPMENT_LIBRARY'] if os.environ.get(name))

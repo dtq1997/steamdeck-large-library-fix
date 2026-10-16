@@ -4,12 +4,12 @@
 
 An offline, reversible SteamOS library UI patch for large Steam libraries.
 
-**0.4.16 预览版**：改进更新后的兼容检查、分组启停与恢复；当前已适配客户端保留 0.4.13 的全部性能优化。这是第三方工具，与 Valve 无关；目前完成了一台大库 Steam Deck 的有限实测，适合愿意保留回退的用户试用。
+**0.4.17 预览版**：扩大对变量改名、代码移动和普通资料字段增加的兼容范围，保留既有性能优化。这是第三方工具，与 Valve 无关；目前完成了一台大库 Steam Deck 的有限实测，适合愿意保留回退的用户试用。
 
 ## 下载和安装
 
 1. 在 Steam Deck 上退出游戏，切换到**桌面模式**。
-2. 从 GitHub 的 **Releases** 下载 `SteamDeck-LargeLibraryFix-0.4.16.desktop`。也可以在电脑下载后，把这一个文件传到 Deck 桌面。
+2. 从 GitHub 的 **Releases** 下载 `SteamDeck-LargeLibraryFix-0.4.17.desktop`。也可以在电脑下载后，把这一个文件传到 Deck 桌面。
 3. 打开这个文件。首次若出现系统安全确认，选择“信任并启动”或相应的执行选项。若系统只把它当成文本打开，右键文件 → 属性 → 权限，允许作为程序执行，再打开。
 4. 看到“已安装”后，方便时正常重开 Steam，或重启 Deck，使补丁加载。
 
@@ -44,9 +44,9 @@ An offline, reversible SteamOS library UI patch for large Steam libraries.
 
 支持原生 SteamOS 的 Steam Deck；安装界面使用系统自带 Python 3、KDE 和用户级 systemd。Windows、macOS、Flatpak Steam 和其他 Linux 发行版未支持。
 
-当前完整实机验证的 Steam 客户端为 **1791918634**。包内保留 **1788652215** 的旧适配，但该客户端没有使用本次单文件安装器重新进行整套实测。
+本版在 **1792108788** 测试分支客户端上实测，并保留 **1791918634** 和 **1788652215** 的旧适配；旧客户端的既有性能输出保持不变。
 
-工具按完整方法和依赖指纹识别代码，**未知客户端、冲突或部分修改会停止，不会强套旧补丁**。其他界面修改工具可能冲突；未验证 Decky/CSS Loader 的组合兼容性。
+工具按相关操作、词法依赖和必要界面接口识别代码，按组启停；无法识别的语义变化、冲突或部分修改会暂停对应优化，不会强套旧补丁。其他界面修改工具可能冲突；未验证 Decky/CSS Loader 的组合兼容性。
 
 安装后，普通待机、重启、关机不会删除用户目录中的安装记录。游戏模式启动前检查一次；相关 Steam UI 文件变化后也会检查。兼容内容被更新覆盖时重新应用，Steam 正在启动或更新时暂缓。
 
@@ -83,7 +83,7 @@ An offline, reversible SteamOS library UI patch for large Steam libraries.
 若桌面入口丢失，可重新打开同版本单文件安装器，恢复入口。命令行备用入口仅供排错：
 
 ```sh
-python3 ~/.local/share/steam-large-library-fix/versions/0.4.16/install.py --uninstall
+python3 ~/.local/share/steam-large-library-fix/versions/0.4.17/install.py --uninstall
 ```
 
 ## 数据与排错

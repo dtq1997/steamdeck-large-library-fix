@@ -55,6 +55,19 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(self.check(renamed)['model'], base)
         self.assertNotEqual(self.check(CONTEXT.replace('load(7)', 'load(8)'))['model'], base)
 
+    def test_plain_data_extensions_are_parameters_but_special_behavior_is_retained(self):
+        base = self.check()['model']
+        extension = CONTEXT.replace('schema={value:', 'schema={future_data:{},value:').replace('value=new Set;', 'future_data;value=new Set;')
+        self.assertEqual(self.check(extension)['model'], base)
+        for altered in [extension.replace('future_data;', 'future_data=sideEffect();'),
+                        extension.replace('future_data:{}', 'future_data:{fnCustomSetter:custom}'),
+                        extension.replace('future_data;', 'future_data;future_data;'),
+                        extension.replace('future_data:{}', 'future_data:{},future_data:{}'),
+                        extension.replace('return false', 'return !!this.future_data', 1)]:
+            with self.subTest(altered=altered[:60]):
+                result = self.check(altered)
+                self.assertTrue('error' in result or result['model'] != base)
+
     def test_schema_escape_and_dependency_writes_are_refused(self):
         for addition in ['sink(schema);', 'schema={};', 'normalize=other;', 'Model.prototype.SetValue=other;']:
             with self.subTest(addition=addition):

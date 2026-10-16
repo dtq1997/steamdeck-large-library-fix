@@ -25,6 +25,18 @@ class PackagingTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def test_upgrade_pauses_old_watcher_and_failure_restores_checks(self):
+        previous = {'control_hashes': {'managed': 'hash'}}
+        with patch.object(install, 'systemctl') as control:
+            with self.assertRaisesRegex(ValueError, 'failed patch'):
+                with install.pause_maintenance(previous):
+                    self.assertEqual(control.call_args.args[0], 'stop')
+                    raise ValueError('failed patch')
+            self.assertEqual(control.call_args.args, ('start', 'steam-large-library-fix.path'))
+        with patch.object(install, 'systemctl') as control:
+            with install.pause_maintenance({}):
+                control.assert_not_called()
+
     def test_desktop_exec_is_one_valid_self_contained_argument(self):
         content = build_release.desktop_source()
         line = next(x for x in content.splitlines() if x.startswith('Exec='))

@@ -41,7 +41,8 @@ def run_syntax(texts, source='', offsets=(), budget_candidates=(), collect=False
         runner = Path(os.environ.get('LLF_DEVELOPMENT_QJS', str(runner)))
     command = ['/usr/bin/nice', '-n', '10', str(runner), '--memory-limit', str(384 * 1024), '--stack-size', '2048',
                '--std', '-I', str(HERE / 'acorn.js'), '-I', str(HERE / 'terser.js'), '-I', str(HERE / 'local.js'),
-               '-I', str(HERE / 'model.js'), str(HERE / 'syntax.js')]
+               '-I', str(HERE / 'model.js'), '-I', str(HERE / 'structural.js'),
+               '-I', str(HERE / 'operations.js'), str(HERE / 'syntax.js')]
     request = json.dumps({'texts': texts, 'source': source, 'offsets': list(offsets),
                           'budget_candidates': list(budget_candidates), 'collect_spellings': collect}, ensure_ascii=True)
     try:
@@ -128,12 +129,13 @@ def byte_offsets(source, offsets):
     return output
 
 
-def run_native(source, offsets, budgets, methods=()):
+def run_native(source, offsets, budgets, methods=(), factories=()):
     path = HERE / 'libsyntax-linux-x86_64.so'
     if platform.system() == 'Darwin':
         path = Path(os.environ.get('LLF_DEVELOPMENT_LIBRARY', str(path)))
     command = [sys.executable, str(HERE / 'native_syntax.py'), str(path)]
-    request = json.dumps({'source': source, 'offsets': list(offsets), 'budget_candidates': budgets, 'methods': list(methods)})
+    request = json.dumps({'source': source, 'offsets': list(offsets), 'budget_candidates': budgets,
+                          'methods': list(methods), 'factories': list(factories)})
     try:
         call = subprocess.run(command, input=request, text=True, encoding='utf-8', capture_output=True,
                               timeout=20, env={'LANG': 'C.UTF-8'})
@@ -278,6 +280,7 @@ def accepted_rows(rows, expected, key, checked, offsets, valid):
 
 
 def prepare(source, profile, metadata):
+    import structural
     texts, lookup, requests, positions = [], {}, [], []
     modules, ranges = module_ranges(source)
     def add(text):
@@ -303,9 +306,12 @@ def prepare(source, profile, metadata):
     method_positions = [match.start() for match in re.finditer(selector, source)]
     if len(method_positions) > 512:
         raise Incompatible('Too many local operation candidates')
-    offsets = byte_offsets(source, [*positions, *method_positions])
+    structural_rows, anchors = structural.discover(source, metadata) if metadata.get('structural') else ([], [])
+    factory_positions = sorted({row['start'] for row in structural_rows} | set(anchors))
+    offsets = byte_offsets(source, [*positions, *method_positions, *factory_positions])
     budget = [{**item, 'start': offsets[item['start']], 'end': offsets[item['start'] + len(item['raw'])]} for item in pool]
-    native = run_native(source, offsets.values(), budget, [offsets[pos] for pos in method_positions])
+    native = run_native(source, offsets.values(), budget, [offsets[pos] for pos in method_positions],
+                        [offsets[pos] for pos in factory_positions])
     ast_method_rows(source, requests, native['units'], add)
     budget_requests = [(index, add({'literal_pair': [pool[index]['raw'], pool[index]['replacement']]}))
                        for index in native['budgets']]
@@ -319,6 +325,9 @@ def prepare(source, profile, metadata):
     found['spellings'] = [(pool[index]['start'], pool[index]['start'] + len(pool[index]['raw']), pool[index]['replacement'])
                           for index, request in budget_requests if checked['results'][request].get('equal')]
     found['local_units'] = native['units']
+    if structural_rows and structural.needs_projection(found, metadata):
+        units = structural.certify(source, profile, metadata, structural_rows, native.get('factories', []), offsets, valid, found)
+        found['operations'] = structural.local_operations(units)
     verify_model(source, metadata, found)
     return found
 
@@ -432,6 +441,9 @@ def plan(source, profile, metadata, css):
             kinds.add('original')
         if 'startup' in active:
             paused.pop('startup', None)
+        if metadata.get('structural'):
+            import structural
+            structural.extend_groups(found, metadata, active, paused, groups)
     changes = fit_budget(source, active, paused, groups, found.get('spellings', []))
     if not active:
         raise Incompatible('No compatible optimization group')

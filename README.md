@@ -7,7 +7,7 @@ If you have a very large Steam library, logging in, waking your Steam Deck, or b
 ## Download and install
 
 1. Exit your games and switch your Steam Deck to **Desktop Mode**.
-2. Download `SteamDeck-LargeLibraryFix-0.4.16.desktop` from **[Releases](https://github.com/dtq1997/steamdeck-large-library-fix/releases)** on GitHub. You can also download it on another computer and copy the file to your Deck's desktop.
+2. Download `SteamDeck-LargeLibraryFix-0.4.17.desktop` from **[Releases](https://github.com/dtq1997/steamdeck-large-library-fix/releases)** on GitHub. You can also download it on another computer and copy the file to your Deck's desktop.
 3. Open the file. If a security prompt appears, choose **Trust and Launch**, **Continue**, or the equivalent run option. If it opens as text, right-click it → Properties → Permissions, allow it to run as a program, then open it again.
 4. Once **Installed** appears, restart Steam normally—or restart your Deck—when convenient to load the patch.
 
@@ -26,7 +26,7 @@ This is a preview release and some stutter remains. Testing used one Deck with r
 
 The plugin patches recognized Steam UI code to avoid repeated work: it reuses unchanged game data, shares filter results within an update, and recalculates collection counts and cover previews only when relevant data changes. It also adjusts parts of navigation and scrolling, and limits how long store-data requests can hold up initialization.
 
-The patch and original backups stay in your user directory. Compatibility is checked by feature group when Game Mode starts and relevant files change. Checks recognize formatting changes and some variable and class renaming. Wake checks cover the relevant model members, reducing disruption from unrelated helper changes. Verified results are reused to avoid repeated parsing at startup. Compatible groups are reapplied after updates; groups whose related logic changed are paused. Check status lists active and paused groups. Unrecognized changes can still require a newer compatible release; old logic is not forced onto them.
+The patch and original backups stay in your user directory. Compatibility is checked by feature group when Game Mode starts and relevant files change. Checks follow the relevant logic and its dependencies. They tolerate variable renaming and code moves, as well as ordinary data-field additions. UI edits target only the work being optimized, preserving other fixes added by Steam. Verified results are reused to avoid repeated parsing at startup. Compatible groups are reapplied after updates; groups whose related logic changed are paused. Check status lists active and paused groups. Unrecognized changes can still require a newer compatible release; old logic is not forced onto them.
 
 ## Usage
 

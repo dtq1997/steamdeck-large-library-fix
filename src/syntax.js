@@ -1,22 +1,4 @@
 // [Codex] Trusted parser driver. Steam source is parsed as data, never evaluated.
-function envelope(text) {
-  let suffix = '';
-  let body = text;
-  if (!/^\d+\s*:/.test(body) && body.endsWith('}),')) {
-    suffix = '}),'; body = body.slice(0, -3);
-  } else if (body.endsWith(',')) {
-    suffix = ','; body = body.slice(0, -1);
-  }
-  const forms = [[body, 'program']];
-  if (/^\d+\s*:/.test(body)) forms.unshift(['({' + body + '})', 'object']);
-  forms.push(['class __LLF__{' + body + '}', 'class']);
-  for (const [input, kind] of forms) {
-    try { acorn.parse(input, {ecmaVersion: 'latest'}); return {input, kind, suffix}; }
-    catch (_) { /* Try the other explicitly supported syntax contexts. */ }
-  }
-  throw Error('Unsupported syntax context');
-}
-
 function canonicalInfo(text) {
   const form = envelope(text);
   const result = Terser.minify_sync(form.input, {
@@ -118,6 +100,11 @@ function byteLength(text) {
 const request = JSON.parse(std.in.readAsString());
 const results = request.texts.map(text => {
   try {
+    if (typeof text === 'object' && text.structural) return structuralCertificate(text.structural);
+    if (typeof text === 'object' && text.structural_tokens) return {tokens: structuralTokens(text.structural_tokens)};
+    if (typeof text === 'object' && text.adapt_patch) return adaptedPatch(text.adapt_patch);
+    if (typeof text === 'object' && text.operation_edits) return operationEdits(text.operation_edits);
+    if (typeof text === 'object' && text.operation_interfaces) return {interfaces: operationInterfaces(text.operation_interfaces)};
     if (typeof text === 'object' && text.factory_header) return scopedFactoryHeader(text);
     if (typeof text === 'object' && text.model_context) return modelContract(text.model_context, text.outer_bindings || [], text.wake || false);
     if (typeof text === 'object' && text.local_unit) return localTransform(text.local_unit);

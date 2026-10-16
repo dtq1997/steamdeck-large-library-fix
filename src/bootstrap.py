@@ -16,6 +16,7 @@ FILES = {'engine.py', 'rules.json', 'install.py', 'status.py', 'manager.py', 'RE
          'compat.py', 'compatibility.json', 'syntax.js', 'acorn.js', 'terser.js',
          'qjs-linux-x86_64', 'vendor.json', 'THIRD-PARTY-NOTICES.txt'}
 FILES.update({'native_syntax.py', 'libsyntax-linux-x86_64.so', 'local.js', 'model.js', 'updater.py'})
+FILES.update({'structural.py', 'structural.js', 'operations.js'})
 
 
 def read_payload(filename):

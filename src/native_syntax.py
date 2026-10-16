@@ -151,6 +151,33 @@ def code_position(lib, root, position):
     return False
 
 
+def factory_context(lib, root, position, source, cache):
+    node = lib.ts_node_descendant_for_byte_range(root, position, position)
+    for _ in range(512):
+        if lib.ts_node_is_null(node):
+            return None
+        if lib.ts_node_type(node) in {b'arrow_function', b'function_expression'}:
+            owner = lib.ts_node_parent(node)
+            while lib.ts_node_type(owner) == b'parenthesized_expression':
+                owner = lib.ts_node_parent(owner)
+            if lib.ts_node_type(owner) == b'pair':
+                key = field(lib, owner, b'key')
+                if lib.ts_node_type(key) == b'number':
+                    outer, parent = set(), lib.ts_node_parent(owner)
+                    for _ in range(512):
+                        if lib.ts_node_is_null(parent):
+                            break
+                        if lib.ts_node_type(parent) in {b'arrow_function', b'function_expression', b'function_declaration'}:
+                            outer.update(scope_names(lib, field(lib, parent, b'parameters'), source, cache))
+                            outer.update(scope_names(lib, field(lib, parent, b'body'), source, cache))
+                        parent = lib.ts_node_parent(parent)
+                    outer.update(scope_names(lib, root, source, cache))
+                    return {'position': position, 'start': lib.ts_node_start_byte(node),
+                            'end': lib.ts_node_end_byte(node), 'outer_bindings': sorted(outer)}
+        node = lib.ts_node_parent(node)
+    return None
+
+
 def literal_position(lib, root, item, source):
     start, end = item['start'], item['end']
     node = lib.ts_node_descendant_for_byte_range(root, start, end)
@@ -164,7 +191,8 @@ def inspect(lib, request):
     source = request['source'].encode('utf-8')
     if len(source) > 32 * 1024 * 1024:
         raise ValueError('Client source exceeds supported size')
-    if any(not isinstance(p, int) or p < 0 or p >= len(source) for p in request['offsets']):
+    positions = [*request['offsets'], *request.get('methods', []), *request.get('factories', [])]
+    if len(positions) > 4096 or any(type(p) is not int or p < 0 or p >= len(source) for p in positions):
         raise ValueError('Invalid requested source position')
     if any(not 0 <= item['start'] < item['end'] <= len(source) for item in request['budget_candidates']):
         raise ValueError('Invalid requested string range')
@@ -184,7 +212,10 @@ def inspect(lib, request):
                    if literal_position(lib, root, item, source)]
         cache = {}
         units = [local_unit(lib, root, position, source, cache) for position in request.get('methods', [])]
-        return {'locations': valid, 'budgets': budgets, 'units': [unit for unit in units if unit]}
+        factories = [factory_context(lib, root, position, source, cache)
+                     for position in request.get('factories', [])]
+        return {'locations': valid, 'budgets': budgets, 'units': [unit for unit in units if unit],
+                'factories': [item for item in factories if item]}
     finally:
         if tree:
             lib.ts_tree_delete(tree)

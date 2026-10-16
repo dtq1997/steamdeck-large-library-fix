@@ -139,12 +139,31 @@ function modelStructure(input, factory, definitions) {
     });
   }
   const selected = modelMembers(model, roots, true);
-  const members = selected.map(member => input.slice(member.start, member.end)).join('\n');
   const subclasses = classes.filter(node => node.superClass?.type === 'Identifier' && node.superClass.name === model.id.name);
   if (subclasses.length !== 1) throw Error('Ambiguous observable model');
+  const neutral = modelDataFields(model, schema, [...selected, subclasses[0]]);
+  const members = selected.filter(member => !neutral.has(member.key?.name)).map(member => input.slice(member.start, member.end)).join('\n');
   const body = 'class ' + model.id.name + '{' + members + '}\n' + input.slice(subclasses[0].start, subclasses[0].end) + '\nreturn ' + model.id.name + ';';
   const seen = new Set([model.id.name, subclasses[0].id.name, ...factory.params.map(parameter => parameter.name)]);
-  return {body, seen, schemaName: [...schemas][0], selected};
+  const schemaName = [...schemas][0];
+  const properties = schema.properties.filter(property => !neutral.has(property.key.name || property.key.value));
+  const schemaCode = 'const ' + schemaName + '={' + properties.map(property => input.slice(property.start, property.end)).join(',') + '};';
+  return {body, seen, schemaName, selected, overrides: new Map([[schemaName, schemaCode]])};
+}
+
+function modelDataFields(model, schema, operations) {
+  const referenced = new Set();
+  for (const operation of operations) localWalk(operation, node => {
+    if (node.type === 'MemberExpression' && node.object.type === 'ThisExpression' &&
+        (!node.computed || node.property.type === 'Literal')) referenced.add(node.computed ? node.property.value : node.property.name);
+  });
+  const fields = new Set(model.body.body.filter(member => member.type === 'PropertyDefinition' &&
+    !member.computed && !member.static && !member.value && !referenced.has(member.key.name) &&
+    model.body.body.filter(other => other.key?.name === member.key.name).length === 1).map(member => member.key.name));
+  return new Set(schema.properties.filter(property => property.value.type === 'ObjectExpression' &&
+    property.value.properties.length === 0 && fields.has(property.key.name || property.key.value) &&
+    schema.properties.filter(other => (other.key.name || other.key.value) === (property.key.name || property.key.value)).length === 1)
+    .map(property => property.key.name || property.key.value));
 }
 
 function modelDependencies(input, definitions, state) {
@@ -157,8 +176,10 @@ function modelDependencies(input, definitions, state) {
     for (const [name, definition] of globals) {
       seen.add(name);
       const node = definitions.get(name);
-      let declaration = input.slice(node.start, node.end);
-      if (node.type === 'VariableDeclarator' && node.init?.type === 'NewExpression' && definitions.has(node.init.callee.name)) {
+      let declaration = state.overrides?.get(name) || input.slice(node.start, node.end);
+      if (state.overrides?.has(name)) {
+        // Generic, unobserved data fields are schema parameters, not new algorithms.
+      } else if (node.type === 'VariableDeclarator' && node.init?.type === 'NewExpression' && definitions.has(node.init.callee.name)) {
         seen.add(node.init.callee.name);
         declaration = modelInterface(name, definitions.get(node.init.callee.name), input, node, definition.references,
           acorn.parse(program, {ecmaVersion: 'latest'}));

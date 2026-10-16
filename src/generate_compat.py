@@ -111,6 +111,9 @@ def profile_metadata(source, profile, css):
     edits = compat.spelling_edits(source, values)
     result['spelling_budget'] = [{'start': start, 'end': end, 'replacement': replacement, 'raw': source[start:end]}
                                for start, end, replacement in edits if source.count(source[start:end]) == 1]
+    if 'target' in profile:
+        import structural
+        result['structural'] = structural.generate(source, profile, result)
     return result
 
 
